@@ -1,0 +1,68 @@
+[
+  {
+    "id": "call-001",
+    "agent": "Sales Bot Alpha",
+    "duration_sec": 342,
+    "sentiment": "positive",
+    "sentiment_score": 0.82,
+    "booking_rate": 0.71,
+    "keywords": ["pricing", "test ride", "financing"],
+    "summary": "Customer asked about EMI options and scheduled a test ride for Saturday.",
+    "created_at": "2026-07-11T09:15:00Z"
+  },
+  {
+    "id": "call-002",
+    "agent": "Support Bot Beta",
+    "duration_sec": 128,
+    "sentiment": "neutral",
+    "sentiment_score": 0.55,
+    "booking_rate": 0.0,
+    "keywords": ["charger", "warranty", "replacement"],
+    "summary": "Existing owner reported charger issue; ticket created for service follow-up.",
+    "created_at": "2026-07-11T10:42:00Z"
+  },
+  {
+    "id": "call-003",
+    "agent": "Sales Bot Alpha",
+    "duration_sec": 510,
+    "sentiment": "positive",
+    "sentiment_score": 0.91,
+    "booking_rate": 0.88,
+    "keywords": ["comparison", "range", "delivery"],
+    "summary": "Prospect compared two models; confirmed purchase intent and delivery timeline.",
+    "created_at": "2026-07-11T11:30:00Z"
+  },
+  {
+    "id": "call-004",
+    "agent": "Interview Bot",
+    "duration_sec": 890,
+    "sentiment": "neutral",
+    "sentiment_score": 0.62,
+    "booking_rate": 0.45,
+    "keywords": ["experience", "availability", "salary"],
+    "summary": "Candidate screening call; moved to next round with hiring manager.",
+    "created_at": "2026-07-10T14:20:00Z"
+  },
+  {
+    "id": "call-005",
+    "agent": "Support Bot Beta",
+    "duration_sec": 95,
+    "sentiment": "negative",
+    "sentiment_score": 0.28,
+    "booking_rate": 0.0,
+    "keywords": ["delay", "refund", "escalation"],
+    "summary": "Frustrated customer about delivery delay; escalated to human agent.",
+    "created_at": "2026-07-10T16:05:00Z"
+  },
+  {
+    "id": "call-006",
+    "agent": "Sales Bot Alpha",
+    "duration_sec": 275,
+    "sentiment": "positive",
+    "sentiment_score": 0.78,
+    "booking_rate": 0.65,
+    "keywords": ["discount", "exchange", "color"],
+    "summary": "Exchange offer discussed; customer interested in midnight blue variant.",
+    "created_at": "2026-07-09T09:50:00Z"
+  }
+]
