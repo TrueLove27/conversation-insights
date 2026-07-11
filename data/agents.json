@@ -1,0 +1,80 @@
+[
+  {
+    "id": "agent-001",
+    "name": "Jordan Ellis",
+    "team": "North Region",
+    "email": "jordan.ellis@insights-demo.local",
+    "active": true,
+    "hire_date": "2023-03-14T00:00:00",
+    "total_calls": 842,
+    "avg_sentiment_score": 0.62,
+    "booking_rate": 0.41,
+    "avg_handle_time_seconds": 312,
+    "specialties": ["scheduling", "retention"]
+  },
+  {
+    "id": "agent-002",
+    "name": "Priya Nair",
+    "team": "North Region",
+    "email": "priya.nair@insights-demo.local",
+    "active": true,
+    "hire_date": "2022-11-02T00:00:00",
+    "total_calls": 1104,
+    "avg_sentiment_score": 0.71,
+    "booking_rate": 0.47,
+    "avg_handle_time_seconds": 285,
+    "specialties": ["onboarding", "upsell"]
+  },
+  {
+    "id": "agent-003",
+    "name": "Marcus Chen",
+    "team": "West Region",
+    "email": "marcus.chen@insights-demo.local",
+    "active": true,
+    "hire_date": "2024-01-18T00:00:00",
+    "total_calls": 516,
+    "avg_sentiment_score": 0.55,
+    "booking_rate": 0.36,
+    "avg_handle_time_seconds": 338,
+    "specialties": ["technical support"]
+  },
+  {
+    "id": "agent-004",
+    "name": "Elena Vasquez",
+    "team": "West Region",
+    "email": "elena.vasquez@insights-demo.local",
+    "active": true,
+    "hire_date": "2021-08-09T00:00:00",
+    "total_calls": 1389,
+    "avg_sentiment_score": 0.68,
+    "booking_rate": 0.44,
+    "avg_handle_time_seconds": 298,
+    "specialties": ["billing", "disputes"]
+  },
+  {
+    "id": "agent-005",
+    "name": "Sam Okafor",
+    "team": "Central Region",
+    "email": "sam.okafor@insights-demo.local",
+    "active": true,
+    "hire_date": "2023-07-22T00:00:00",
+    "total_calls": 673,
+    "avg_sentiment_score": 0.59,
+    "booking_rate": 0.39,
+    "avg_handle_time_seconds": 321,
+    "specialties": ["scheduling", "callbacks"]
+  },
+  {
+    "id": "agent-006",
+    "name": "Riley Thompson",
+    "team": "Central Region",
+    "email": "riley.thompson@insights-demo.local",
+    "active": false,
+    "hire_date": "2020-05-30T00:00:00",
+    "total_calls": 2044,
+    "avg_sentiment_score": 0.51,
+    "booking_rate": 0.33,
+    "avg_handle_time_seconds": 355,
+    "specialties": ["legacy accounts"]
+  }
+]

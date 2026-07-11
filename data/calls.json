@@ -1,0 +1,407 @@
+[
+  {
+    "id": "call-1001",
+    "agent_id": "agent-002",
+    "customer_name": "Alex Morgan",
+    "phone_number": "+1-555-0142",
+    "started_at": "2026-07-01T09:12:00",
+    "duration_seconds": 245,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.78,
+    "booking_intent": true,
+    "transcript": "Agent: Good morning, thanks for calling VoiceMetrics demo line. How can I help? Customer: Hi, I wanted to schedule a consultation for next week. Agent: Absolutely, I have Tuesday at 10 AM or Thursday at 2 PM available. Customer: Thursday works perfectly. Agent: Great, I have you confirmed for Thursday at 2 PM. Customer: Thank you so much, really appreciate the help.",
+    "keywords": [
+      {"term": "schedule", "count": 2, "category": "scheduling"},
+      {"term": "consultation", "count": 1, "category": "scheduling"},
+      {"term": "confirmed", "count": 1, "category": "scheduling"},
+      {"term": "thank", "count": 2, "category": "sentiment"}
+    ],
+    "summary": "Customer requested a consultation and successfully booked Thursday at 2 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1002",
+    "agent_id": "agent-003",
+    "customer_name": "Taylor Brooks",
+    "phone_number": "+1-555-0198",
+    "started_at": "2026-07-01T10:45:00",
+    "duration_seconds": 412,
+    "outcome": "not_booked",
+    "sentiment": "negative",
+    "sentiment_score": -0.42,
+    "booking_intent": false,
+    "transcript": "Agent: Thanks for holding, this is Marcus. Customer: I have been waiting forever and still no resolution. Agent: I understand your frustration. Customer: This is unacceptable, I want to speak to a supervisor. Agent: I can escalate this for you. Customer: I am really disappointed with the service.",
+    "keywords": [
+      {"term": "waiting", "count": 1, "category": "support"},
+      {"term": "supervisor", "count": 1, "category": "general"},
+      {"term": "disappointed", "count": 1, "category": "sentiment"},
+      {"term": "frustration", "count": 1, "category": "sentiment"}
+    ],
+    "summary": "Customer expressed frustration about wait times and requested escalation.",
+    "language": "en"
+  },
+  {
+    "id": "call-1003",
+    "agent_id": "agent-001",
+    "customer_name": "Jamie Lee",
+    "phone_number": "+1-555-0221",
+    "started_at": "2026-07-01T13:20:00",
+    "duration_seconds": 189,
+    "outcome": "callback",
+    "sentiment": "neutral",
+    "sentiment_score": 0.08,
+    "booking_intent": true,
+    "transcript": "Agent: Hi Jamie, Jordan here. Customer: I need to book something but I am driving. Agent: No problem, I can call you back in an hour. Customer: That would be great, please schedule a callback. Agent: Callback set for 2:30 PM today.",
+    "keywords": [
+      {"term": "callback", "count": 2, "category": "scheduling"},
+      {"term": "book", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Customer requested a callback while driving; callback scheduled for 2:30 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1004",
+    "agent_id": "agent-004",
+    "customer_name": "Morgan Patel",
+    "phone_number": "+1-555-0334",
+    "started_at": "2026-07-02T08:55:00",
+    "duration_seconds": 356,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.65,
+    "booking_intent": true,
+    "transcript": "Customer: I got your email about the premium plan. Agent: Happy to walk through pricing and features. Customer: What is the monthly cost? Agent: The premium tier is 49 dollars per month. Customer: Sounds good, let us confirm the appointment for onboarding Friday.",
+    "keywords": [
+      {"term": "pricing", "count": 2, "category": "pricing"},
+      {"term": "premium", "count": 2, "category": "pricing"},
+      {"term": "onboarding", "count": 1, "category": "onboarding"},
+      {"term": "confirm", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Pricing discussion led to confirmed onboarding appointment on Friday.",
+    "language": "en"
+  },
+  {
+    "id": "call-1005",
+    "agent_id": "agent-005",
+    "customer_name": "Casey Nguyen",
+    "phone_number": "+1-555-0412",
+    "started_at": "2026-07-02T11:10:00",
+    "duration_seconds": 278,
+    "outcome": "not_booked",
+    "sentiment": "mixed",
+    "sentiment_score": 0.12,
+    "booking_intent": false,
+    "transcript": "Customer: I might cancel my subscription. Agent: I am sorry to hear that, can I ask what happened? Customer: The price increased but support has been helpful. Agent: We can review plan options. Customer: Let me think about it and call back.",
+    "keywords": [
+      {"term": "cancel", "count": 1, "category": "cancellation"},
+      {"term": "price", "count": 1, "category": "pricing"},
+      {"term": "support", "count": 1, "category": "support"}
+    ],
+    "summary": "Customer considered cancellation due to price increase; deferred decision.",
+    "language": "en"
+  },
+  {
+    "id": "call-1006",
+    "agent_id": "agent-002",
+    "customer_name": "Drew Simmons",
+    "phone_number": "+1-555-0523",
+    "started_at": "2026-07-02T15:40:00",
+    "duration_seconds": 302,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.82,
+    "booking_intent": true,
+    "transcript": "Customer: I need to reschedule my demo. Agent: Of course, what day works best? Customer: Next Monday morning is perfect. Agent: Booked for Monday at 9 AM. Customer: Excellent, thank you for being so helpful.",
+    "keywords": [
+      {"term": "reschedule", "count": 1, "category": "cancellation"},
+      {"term": "demo", "count": 1, "category": "scheduling"},
+      {"term": "booked", "count": 1, "category": "scheduling"},
+      {"term": "helpful", "count": 1, "category": "sentiment"}
+    ],
+    "summary": "Demo successfully rescheduled to Monday at 9 AM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1007",
+    "agent_id": "agent-003",
+    "customer_name": "Robin Hart",
+    "phone_number": "+1-555-0611",
+    "started_at": "2026-07-03T09:05:00",
+    "duration_seconds": 521,
+    "outcome": "not_booked",
+    "sentiment": "negative",
+    "sentiment_score": -0.55,
+    "booking_intent": false,
+    "transcript": "Customer: Your system keeps dropping my calls. Agent: Let me troubleshoot that. Customer: This is the third time today, I am angry. Agent: I apologize for the inconvenience. Customer: I want a refund and I may file a complaint.",
+    "keywords": [
+      {"term": "refund", "count": 1, "category": "pricing"},
+      {"term": "complaint", "count": 1, "category": "support"},
+      {"term": "angry", "count": 1, "category": "sentiment"},
+      {"term": "troubleshoot", "count": 1, "category": "support"}
+    ],
+    "summary": "Technical issues caused customer anger; refund and complaint language detected.",
+    "language": "en"
+  },
+  {
+    "id": "call-1008",
+    "agent_id": "agent-001",
+    "customer_name": "Quinn Alvarez",
+    "phone_number": "+1-555-0720",
+    "started_at": "2026-07-03T14:22:00",
+    "duration_seconds": 198,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.71,
+    "booking_intent": true,
+    "transcript": "Customer: Is there availability this week for a strategy session? Agent: Yes, Wednesday at 3 PM is open. Customer: Please book it. Agent: You are confirmed, looking forward to speaking with you.",
+    "keywords": [
+      {"term": "availability", "count": 1, "category": "scheduling"},
+      {"term": "strategy", "count": 1, "category": "general"},
+      {"term": "confirmed", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Strategy session booked for Wednesday at 3 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1009",
+    "agent_id": "agent-004",
+    "customer_name": "Harper Kim",
+    "phone_number": "+1-555-0815",
+    "started_at": "2026-07-04T10:18:00",
+    "duration_seconds": 267,
+    "outcome": "voicemail",
+    "sentiment": "neutral",
+    "sentiment_score": 0.0,
+    "booking_intent": false,
+    "transcript": "Agent: Hi Harper, returning your call about billing. Customer: Please leave a message after the tone. Agent: Voicemail left with callback number and reference ticket 44821.",
+    "keywords": [
+      {"term": "billing", "count": 1, "category": "pricing"},
+      {"term": "voicemail", "count": 1, "category": "general"},
+      {"term": "callback", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Outbound billing follow-up reached voicemail; message left.",
+    "language": "en"
+  },
+  {
+    "id": "call-1010",
+    "agent_id": "agent-005",
+    "customer_name": "Skyler Reed",
+    "phone_number": "+1-555-0927",
+    "started_at": "2026-07-04T16:50:00",
+    "duration_seconds": 334,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.69,
+    "booking_intent": true,
+    "transcript": "Customer: I am new and need help getting started. Agent: Welcome aboard, I can schedule onboarding. Customer: Tomorrow afternoon works. Agent: Appointment reserved for tomorrow at 1 PM. Customer: Perfect, thanks.",
+    "keywords": [
+      {"term": "onboarding", "count": 2, "category": "onboarding"},
+      {"term": "welcome", "count": 1, "category": "onboarding"},
+      {"term": "appointment", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "New customer onboarding scheduled for tomorrow at 1 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1011",
+    "agent_id": "agent-002",
+    "customer_name": "Blake Turner",
+    "phone_number": "+1-555-1033",
+    "started_at": "2026-07-05T08:30:00",
+    "duration_seconds": 176,
+    "outcome": "disconnected",
+    "sentiment": "neutral",
+    "sentiment_score": -0.05,
+    "booking_intent": false,
+    "transcript": "Agent: Thanks for calling, how can I assist? Customer: Hello? Can you hear me? Agent: Yes, I can hear you. Customer: The line is breaking up... [call disconnected]",
+    "keywords": [
+      {"term": "disconnected", "count": 1, "category": "general"},
+      {"term": "line", "count": 1, "category": "support"}
+    ],
+    "summary": "Call dropped due to connection issues before resolution.",
+    "language": "en"
+  },
+  {
+    "id": "call-1012",
+    "agent_id": "agent-001",
+    "customer_name": "Jordan Price",
+    "phone_number": "+1-555-1144",
+    "started_at": "2026-07-05T12:05:00",
+    "duration_seconds": 388,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.74,
+    "booking_intent": true,
+    "transcript": "Customer: I saw your promotion and want to upgrade. Agent: Great choice, we can schedule implementation training. Customer: Can we do next Tuesday? Agent: Tuesday at 11 AM is available and now confirmed.",
+    "keywords": [
+      {"term": "upgrade", "count": 1, "category": "pricing"},
+      {"term": "promotion", "count": 1, "category": "pricing"},
+      {"term": "training", "count": 1, "category": "onboarding"},
+      {"term": "confirmed", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Upgrade discussion completed with training booked for Tuesday 11 AM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1013",
+    "agent_id": "agent-003",
+    "customer_name": "Avery Collins",
+    "phone_number": "+1-555-1255",
+    "started_at": "2026-07-06T09:48:00",
+    "duration_seconds": 445,
+    "outcome": "callback",
+    "sentiment": "mixed",
+    "sentiment_score": 0.15,
+    "booking_intent": true,
+    "transcript": "Customer: I have a technical issue but also want to book a review meeting. Agent: Let me fix the login issue first. Customer: Thanks, that helped, but I need to join another call. Agent: I will callback at 4 PM to finish scheduling.",
+    "keywords": [
+      {"term": "technical", "count": 1, "category": "support"},
+      {"term": "login", "count": 1, "category": "support"},
+      {"term": "callback", "count": 1, "category": "scheduling"},
+      {"term": "meeting", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Login issue resolved; scheduling deferred to 4 PM callback.",
+    "language": "en"
+  },
+  {
+    "id": "call-1014",
+    "agent_id": "agent-004",
+    "customer_name": "Reese Dalton",
+    "phone_number": "+1-555-1366",
+    "started_at": "2026-07-06T15:15:00",
+    "duration_seconds": 299,
+    "outcome": "not_booked",
+    "sentiment": "negative",
+    "sentiment_score": -0.31,
+    "booking_intent": false,
+    "transcript": "Customer: My invoice is wrong again. Agent: I can review the charges with you. Customer: This keeps happening and I am not happy. Agent: I understand, I can apply a credit. Customer: I will think about continuing service.",
+    "keywords": [
+      {"term": "invoice", "count": 1, "category": "pricing"},
+      {"term": "charges", "count": 1, "category": "pricing"},
+      {"term": "credit", "count": 1, "category": "pricing"},
+      {"term": "not happy", "count": 1, "category": "sentiment"}
+    ],
+    "summary": "Billing dispute partially addressed; customer undecided on continuing.",
+    "language": "en"
+  },
+  {
+    "id": "call-1015",
+    "agent_id": "agent-005",
+    "customer_name": "Parker Shaw",
+    "phone_number": "+1-555-1477",
+    "started_at": "2026-07-07T08:22:00",
+    "duration_seconds": 214,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.8,
+    "booking_intent": true,
+    "transcript": "Customer: I would like to book a quarterly business review. Agent: We have slots on July 14th. Customer: Morning preferred. Agent: Booked for 10 AM on the 14th. Customer: Wonderful, appreciate it.",
+    "keywords": [
+      {"term": "quarterly", "count": 1, "category": "general"},
+      {"term": "review", "count": 1, "category": "general"},
+      {"term": "booked", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Quarterly business review scheduled for July 14 at 10 AM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1016",
+    "agent_id": "agent-002",
+    "customer_name": "Logan Pierce",
+    "phone_number": "+1-555-1588",
+    "started_at": "2026-07-07T13:55:00",
+    "duration_seconds": 361,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.67,
+    "booking_intent": true,
+    "transcript": "Customer: Can we move my appointment to next week? Agent: Sure, which day? Customer: Wednesday afternoon. Agent: Reserved Wednesday at 4 PM. Customer: Confirmed, thank you.",
+    "keywords": [
+      {"term": "appointment", "count": 2, "category": "scheduling"},
+      {"term": "reserved", "count": 1, "category": "scheduling"},
+      {"term": "confirmed", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Appointment moved to Wednesday at 4 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1017",
+    "agent_id": "agent-001",
+    "customer_name": "Sydney Marsh",
+    "phone_number": "+1-555-1699",
+    "started_at": "2026-07-08T10:40:00",
+    "duration_seconds": 233,
+    "outcome": "not_booked",
+    "sentiment": "neutral",
+    "sentiment_score": 0.04,
+    "booking_intent": false,
+    "transcript": "Customer: Just checking your business hours. Agent: We are open Monday through Friday, 8 to 6. Customer: Good to know, no appointment needed today.",
+    "keywords": [
+      {"term": "hours", "count": 1, "category": "general"},
+      {"term": "appointment", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Informational call about business hours; no booking required.",
+    "language": "en"
+  },
+  {
+    "id": "call-1018",
+    "agent_id": "agent-003",
+    "customer_name": "Emery Fox",
+    "phone_number": "+1-555-1701",
+    "started_at": "2026-07-08T16:12:00",
+    "duration_seconds": 478,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.58,
+    "booking_intent": true,
+    "transcript": "Customer: I need help migrating data and want a setup session. Agent: We can schedule migration support. Customer: Friday works. Agent: Friday 2 PM is confirmed. Customer: Glad we could resolve this.",
+    "keywords": [
+      {"term": "migration", "count": 1, "category": "support"},
+      {"term": "setup", "count": 1, "category": "onboarding"},
+      {"term": "confirmed", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Migration support session booked for Friday at 2 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1019",
+    "agent_id": "agent-004",
+    "customer_name": "Rowan Blake",
+    "phone_number": "+1-555-1812",
+    "started_at": "2026-07-09T09:33:00",
+    "duration_seconds": 315,
+    "outcome": "callback",
+    "sentiment": "neutral",
+    "sentiment_score": 0.11,
+    "booking_intent": true,
+    "transcript": "Customer: I am interested but need approval from my manager. Agent: I can send a summary email. Customer: Call me back tomorrow after noon. Agent: Callback scheduled for 12:30 PM tomorrow.",
+    "keywords": [
+      {"term": "manager", "count": 1, "category": "general"},
+      {"term": "callback", "count": 2, "category": "scheduling"},
+      {"term": "approval", "count": 1, "category": "general"}
+    ],
+    "summary": "Purchase pending manager approval; callback set for tomorrow 12:30 PM.",
+    "language": "en"
+  },
+  {
+    "id": "call-1020",
+    "agent_id": "agent-005",
+    "customer_name": "Finley Grant",
+    "phone_number": "+1-555-1923",
+    "started_at": "2026-07-09T14:08:00",
+    "duration_seconds": 292,
+    "outcome": "booked",
+    "sentiment": "positive",
+    "sentiment_score": 0.76,
+    "booking_intent": true,
+    "transcript": "Customer: Your team was helpful last time, I want another session. Agent: Happy to hear that. Customer: Book me for Monday please. Agent: Monday 3 PM is locked in. Customer: Excellent service as always.",
+    "keywords": [
+      {"term": "helpful", "count": 1, "category": "sentiment"},
+      {"term": "session", "count": 1, "category": "scheduling"},
+      {"term": "book", "count": 1, "category": "scheduling"}
+    ],
+    "summary": "Repeat customer booked follow-up session for Monday at 3 PM.",
+    "language": "en"
+  }
+]
