@@ -12,34 +12,27 @@ export default function AnalyzePage() {
   const [transcript, setTranscript] = useState(SAMPLE_TRANSCRIPT);
   const [customerName, setCustomerName] = useState("Demo Customer");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
-  const [queuedJob, setQueuedJob] = useState<JobRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useCoaching, setUseCoaching] = useState(true);
+  const [industry, setIndustry] = useState("healthcare");
 
   const handleAnalyze = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const analysis = await api.analyzeTranscript({ transcript, customer_name: customerName });
+      const analysis = await api.analyzeTranscript({
+        transcript,
+        customer_name: customerName,
+        use_rag_context: useCoaching,
+        industry,
+      });
       setResult(analysis);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed");
+      setError(err instanceof Error ? err.message : "Could not review this call");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleQueueJob = async () => {
-    setError(null);
-    try {
-      const job = await api.createJob({
-        job_type: "transcript_analysis",
-        payload: { transcript, customer_name: customerName },
-      });
-      setQueuedJob(job);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to queue job");
     }
   };
 
@@ -47,21 +40,34 @@ export default function AnalyzePage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h2>Transcript Analysis</h2>
-          <p>Run rule-based mock NLP to extract sentiment, keywords, and booking intent.</p>
+          <h2>Review a Call</h2>
+          <p>Paste a conversation and Talksmith will tell you how it went — and what could improve.</p>
         </div>
       </header>
 
       <section className="split-layout">
         <form className="panel analyze-form" onSubmit={handleAnalyze}>
-          <h3>Input Transcript</h3>
-          <label htmlFor="customer-name">Customer Name</label>
+          <h3>Paste the conversation</h3>
+          <p className="panel-desc">Copy what the customer and agent said. We'll analyze the tone and outcome.</p>
+          <label htmlFor="customer-name">Customer name</label>
           <input
             id="customer-name"
             value={customerName}
             onChange={(event) => setCustomerName(event.target.value)}
           />
-          <label htmlFor="transcript">Transcript</label>
+          <label className="checkbox-row">
+            <input type="checkbox" checked={useCoaching} onChange={(e) => setUseCoaching(e.target.checked)} />
+            Include coaching tips from our playbook library
+          </label>
+          <label htmlFor="industry">Type of business</label>
+          <select id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+            <option value="healthcare">Healthcare</option>
+            <option value="saas">Software / SaaS</option>
+            <option value="retail">Retail / Shopping</option>
+            <option value="support">Customer support</option>
+            <option value="banking">Banking / Finance</option>
+          </select>
+          <label htmlFor="transcript">Conversation</label>
           <textarea
             id="transcript"
             rows={14}
@@ -72,35 +78,25 @@ export default function AnalyzePage() {
           />
           <div className="button-row">
             <button type="submit" disabled={loading}>
-              {loading ? "Analyzing..." : "Analyze Now"}
-            </button>
-            <button type="button" className="secondary" onClick={handleQueueJob}>
-              Queue Background Job
+              {loading ? "Reviewing…" : "Review this call"}
             </button>
           </div>
           {error ? <p className="form-error">{error}</p> : null}
-          {queuedJob ? (
-            <p className="form-note">Background job queued: {queuedJob.id} ({queuedJob.status})</p>
-          ) : null}
         </form>
 
         <article className="panel">
-          <h3>Analysis Result</h3>
+          <h3>What we found</h3>
           {!result ? (
-            <div className="page-state">Submit a transcript to view analysis output.</div>
+            <div className="page-state">Paste a conversation and hit "Review this call" to see results.</div>
           ) : (
             <div className="analysis-result">
               <div className="detail-grid">
                 <div>
-                  <span className="detail-label">Sentiment</span>
-                  <strong>{result.sentiment}</strong>
+                  <span className="detail-label">Customer mood</span>
+                  <strong>{result.sentiment === "positive" ? "Happy" : result.sentiment === "negative" ? "Upset" : result.sentiment === "mixed" ? "Mixed" : "Neutral"}</strong>
                 </div>
                 <div>
-                  <span className="detail-label">Score</span>
-                  <strong>{result.sentiment_score.toFixed(2)}</strong>
-                </div>
-                <div>
-                  <span className="detail-label">Booking Intent</span>
+                  <span className="detail-label">Wanted to book?</span>
                   <strong>{result.booking_intent ? "Yes" : "No"}</strong>
                 </div>
                 <div>
@@ -109,52 +105,46 @@ export default function AnalyzePage() {
                 </div>
               </div>
 
-              <h4>Sentiment Breakdown</h4>
-              <div className="breakdown-bars">
-                <div>
-                  <span>Positive</span>
-                  <div className="bar-track">
-                    <div className="bar-fill positive" style={{ width: `${result.sentiment_breakdown.positive * 100}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <span>Neutral</span>
-                  <div className="bar-track">
-                    <div className="bar-fill neutral" style={{ width: `${result.sentiment_breakdown.neutral * 100}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <span>Negative</span>
-                  <div className="bar-track">
-                    <div className="bar-fill negative" style={{ width: `${result.sentiment_breakdown.negative * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
               <h4>Summary</h4>
               <p className="summary">{result.summary}</p>
 
-              <h4>Topics</h4>
-              <div className="tag-row">
-                {result.topics.map((topic) => (
-                  <span key={topic} className="tag">
-                    {topic}
-                  </span>
-                ))}
-              </div>
+              {result.topics.length > 0 ? (
+                <>
+                  <h4>Topics discussed</h4>
+                  <div className="tag-row">
+                    {result.topics.map((topic) => (
+                      <span key={topic} className="tag">{topic}</span>
+                    ))}
+                  </div>
+                </>
+              ) : null}
 
-              <h4>Keywords</h4>
-              <div className="tag-row">
-                {result.keywords.map((keyword) => (
-                  <span key={keyword.term} className="tag">
-                    {keyword.term} ({keyword.count})
-                  </span>
-                ))}
-              </div>
+              {result.playbook_citations && result.playbook_citations.length > 0 ? (
+                <>
+                  <h4>Coaching suggestions</h4>
+                  {result.playbook_citations.map((c) => (
+                    <div key={c.document_id + c.text.slice(0, 20)} className="source-card">
+                      <strong>{c.document_name}</strong>
+                      <p>{c.text}</p>
+                    </div>
+                  ))}
+                </>
+              ) : null}
+
+              {result.similar_calls && result.similar_calls.length > 0 ? (
+                <>
+                  <h4>Similar calls from the library</h4>
+                  {result.similar_calls.map((c) => (
+                    <div key={c.document_id + c.text.slice(0, 20)} className="source-card">
+                      <p>{c.text}</p>
+                    </div>
+                  ))}
+                </>
+              ) : null}
 
               {result.risk_flags.length > 0 ? (
                 <>
-                  <h4>Risk Flags</h4>
+                  <h4>Things to watch out for</h4>
                   <ul className="risk-list">
                     {result.risk_flags.map((flag) => (
                       <li key={flag}>{flag}</li>

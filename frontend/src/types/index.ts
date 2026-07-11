@@ -89,6 +89,35 @@ export interface AnalyzeResponse {
   summary: string;
   topics: string[];
   risk_flags: string[];
+  playbook_citations?: RagCitation[];
+  similar_calls?: RagCitation[];
+  analysis_source?: string;
+}
+
+export interface RagCitation {
+  document_id: string;
+  document_name: string;
+  text: string;
+  score: number;
+}
+
+export interface RagSource {
+  chunk_id: string;
+  document_id: string;
+  document_name: string;
+  text: string;
+  score: number;
+  chunk_index: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RagQueryResponse {
+  question: string;
+  answer: string;
+  sources: RagSource[];
+  retrieval_time_ms: number;
+  total_time_ms: number;
+  generator: string;
 }
 
 export interface JobRecord {
@@ -119,6 +148,8 @@ export interface IntegrationStatus {
   groq: { provider: string; configured: boolean; status: string; model?: string };
   webhook: { configured: boolean; status: string };
   ingest_api_key_configured: boolean;
+  rag_service?: Record<string, unknown>;
+  corpus_service?: Record<string, unknown>;
 }
 
 export interface IngestionEvent {

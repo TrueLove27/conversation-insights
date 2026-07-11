@@ -38,8 +38,8 @@ export default function AgentsPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h2>Agent Performance</h2>
-          <p>Compare handle times, booking rates, and sentiment by agent.</p>
+          <h2>Your Team</h2>
+          <p>See how each person is doing — calls handled, wins, and customer mood.</p>
         </div>
       </header>
 

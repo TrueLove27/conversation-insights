@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "Conversation Insights API"
+    app_name: str = "Talksmith API"
     app_version: str = "2.0.0"
     api_prefix: str = "/api/v1"
     debug: bool = False
@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.3-70b-versatile"
     webhook_secret: str | None = None
     enable_llm_analysis: bool = True
+
+    # Platform services
+    rag_service_url: str = "http://localhost:8002"
+    corpus_service_url: str = "http://localhost:8004"
+    enable_rag_context: bool = True
 
 
 @lru_cache

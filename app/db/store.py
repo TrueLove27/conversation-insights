@@ -168,6 +168,10 @@ class Database:
             row = conn.execute("SELECT * FROM agents WHERE id = ?", (agent_id,)).fetchone()
             return self._row_to_agent(row) if row else None
 
+    def upsert_agent(self, agent: AgentRecord) -> None:
+        with self.connection() as conn:
+            self._insert_agent(conn, agent)
+
     # --- Calls ---
     def list_calls(self) -> list[CallRecord]:
         with self.connection() as conn:

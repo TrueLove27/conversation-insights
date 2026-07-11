@@ -131,6 +131,15 @@ class AnalyzeRequest(BaseModel):
     transcript: str = Field(min_length=10, max_length=10000)
     agent_id: str | None = None
     customer_name: str | None = None
+    use_rag_context: bool = False
+    industry: str | None = None
+
+
+class RagCitation(BaseModel):
+    document_id: str
+    document_name: str
+    text: str
+    score: float
 
 
 class AnalyzeResponse(BaseModel):
@@ -143,6 +152,9 @@ class AnalyzeResponse(BaseModel):
     summary: str
     topics: list[str]
     risk_flags: list[str]
+    playbook_citations: list[RagCitation] = Field(default_factory=list)
+    similar_calls: list[RagCitation] = Field(default_factory=list)
+    analysis_source: str = "rules"
 
 
 class JobCreateRequest(BaseModel):
@@ -195,3 +207,5 @@ class IntegrationStatusResponse(BaseModel):
     groq: dict[str, Any]
     webhook: dict[str, Any]
     ingest_api_key_configured: bool
+    rag_service: dict[str, Any] = Field(default_factory=dict)
+    corpus_service: dict[str, Any] = Field(default_factory=dict)

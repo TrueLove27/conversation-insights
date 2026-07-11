@@ -57,15 +57,15 @@ export default function CallsPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h2>Call Explorer</h2>
-          <p>Search, filter, and inspect synthetic voice call transcripts.</p>
+          <h2>All Calls</h2>
+          <p>Browse every conversation. Click a call to read what was said.</p>
         </div>
       </header>
 
       <section className="filters panel">
         <input
           type="search"
-          placeholder="Search transcript, customer, summary..."
+          placeholder="Search by customer name or what was said…"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => event.key === "Enter" && loadCalls()}

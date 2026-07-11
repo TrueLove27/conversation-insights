@@ -24,6 +24,21 @@ const SENTIMENT_COLORS: Record<string, string> = {
   mixed: "#f59e0b",
 };
 
+const SENTIMENT_LABELS: Record<string, string> = {
+  positive: "Happy",
+  neutral: "Okay",
+  negative: "Unhappy",
+  mixed: "Mixed",
+};
+
+const OUTCOME_LABELS: Record<string, string> = {
+  booked: "Won / Booked",
+  not_booked: "Did not book",
+  callback: "Call back later",
+  voicemail: "Voicemail",
+  disconnected: "Hung up",
+};
+
 function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <article className="metric-card">
@@ -38,41 +53,96 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadDashboard = () => {
+    setLoading(true);
     api
       .getDashboard()
       .then(setMetrics)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDashboard();
   }, []);
 
-  if (loading) return <div className="page-state">Loading dashboard metrics...</div>;
-  if (error) return <div className="page-state error">Failed to load dashboard: {error}</div>;
+  const handleLoadSampleCalls = async () => {
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const result = await api.importCorpus(undefined, 200);
+      setImportMsg(`Added ${result.imported} new calls to your library. Refreshing…`);
+      loadDashboard();
+    } catch (err) {
+      setImportMsg(err instanceof Error ? err.message : "Could not load calls");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  if (loading) return <div className="page-state">Loading your overview…</div>;
+  if (error) return <div className="page-state error">Something went wrong: {error}</div>;
   if (!metrics) return null;
 
-  const sentimentData = Object.entries(metrics.sentiment_distribution).map(([name, value]) => ({ name, value }));
-  const outcomeData = Object.entries(metrics.outcome_distribution).map(([name, value]) => ({ name, value }));
+  const sentimentData = Object.entries(metrics.sentiment_distribution).map(([name, value]) => ({
+    name: SENTIMENT_LABELS[name] ?? name,
+    value,
+  }));
+  const outcomeData = Object.entries(metrics.outcome_distribution).map(([name, value]) => ({
+    name: OUTCOME_LABELS[name] ?? name.replace("_", " "),
+    value,
+  }));
+
+  const showLoadMore = metrics.total_calls < 50;
 
   return (
     <div className="page">
+      <section className="welcome-banner panel">
+        <h2>Welcome to Talksmith</h2>
+        <p className="welcome-lead">
+          Talksmith helps you <strong>see how calls went</strong>, <strong>coach your team</strong>, and{" "}
+          <strong>find examples</strong> when someone is stuck on a difficult conversation.
+        </p>
+        <ul className="welcome-list">
+          <li><strong>Managers:</strong> check the numbers below — who's winning calls, who needs help.</li>
+          <li><strong>Agents:</strong> go to <em>Coaching Tips</em> or <em>Find Similar</em> when you need advice mid-call.</li>
+        </ul>
+        {showLoadMore ? (
+          <div className="welcome-action">
+            <p className="form-note">You're seeing a small demo set ({metrics.total_calls} calls). Load the full sample library to explore more.</p>
+            <button type="button" onClick={handleLoadSampleCalls} disabled={importing}>
+              {importing ? "Loading calls…" : "Load full call library (600+)"}
+            </button>
+          </div>
+        ) : null}
+        {importMsg ? <p className="form-note">{importMsg}</p> : null}
+      </section>
+
       <header className="page-header">
         <div>
-          <h2>Operations Dashboard</h2>
-          <p>Real-time overview of voice call performance and sentiment trends.</p>
+          <h2>Team Overview</h2>
+          <p>A quick snapshot of how conversations are going.</p>
         </div>
       </header>
 
       <section className="metric-grid">
-        <MetricCard label="Total Calls" value={String(metrics.total_calls)} hint="Last 10 days" />
-        <MetricCard label="Booking Rate" value={`${(metrics.booking_rate * 100).toFixed(1)}%`} hint="Booked / total" />
-        <MetricCard label="Avg Sentiment" value={metrics.avg_sentiment_score.toFixed(2)} hint="Scale -1 to 1" />
-        <MetricCard label="Avg Duration" value={`${Math.round(metrics.avg_duration_seconds)}s`} hint="Handle time" />
+        <MetricCard label="Calls handled" value={String(metrics.total_calls)} hint="In your library" />
+        <MetricCard label="Success rate" value={`${(metrics.booking_rate * 100).toFixed(1)}%`} hint="Calls that ended well" />
+        <MetricCard
+          label="Customer mood"
+          value={metrics.avg_sentiment_score >= 0.3 ? "Mostly good" : metrics.avg_sentiment_score >= 0 ? "Mixed" : "Needs attention"}
+          hint="Based on call tone"
+        />
+        <MetricCard label="Avg call length" value={`${Math.round(metrics.avg_duration_seconds / 60)} min`} hint="Typical conversation" />
       </section>
 
       <section className="chart-grid">
         <article className="panel">
-          <h3>Calls & Bookings by Day</h3>
+          <h3>Calls over time</h3>
+          <p className="panel-desc">How many conversations happened each day.</p>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={metrics.calls_by_day}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -80,19 +150,20 @@ export default function DashboardPage() {
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
               <Legend />
-              <Line type="monotone" dataKey="calls" stroke="#38bdf8" strokeWidth={2} />
-              <Line type="monotone" dataKey="bookings" stroke="#22c55e" strokeWidth={2} />
+              <Line type="monotone" dataKey="calls" name="Calls" stroke="#38bdf8" strokeWidth={2} />
+              <Line type="monotone" dataKey="bookings" name="Wins" stroke="#22c55e" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </article>
 
         <article className="panel">
-          <h3>Sentiment Distribution</h3>
+          <h3>How customers felt</h3>
+          <p className="panel-desc">Were people happy, neutral, or upset?</p>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3}>
-                {sentimentData.map((entry) => (
-                  <Cell key={entry.name} fill={SENTIMENT_COLORS[entry.name] ?? "#64748b"} />
+                {sentimentData.map((entry, i) => (
+                  <Cell key={entry.name} fill={Object.values(SENTIMENT_COLORS)[i] ?? "#64748b"} />
                 ))}
               </Pie>
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
@@ -102,11 +173,12 @@ export default function DashboardPage() {
         </article>
 
         <article className="panel">
-          <h3>Outcome Breakdown</h3>
+          <h3>How calls ended</h3>
+          <p className="panel-desc">Booked, callback, voicemail, etc.</p>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={outcomeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" />
+              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
               <Bar dataKey="value" fill="#818cf8" radius={[6, 6, 0, 0]} />
@@ -115,13 +187,13 @@ export default function DashboardPage() {
         </article>
 
         <article className="panel">
-          <h3>Top Keywords</h3>
+          <h3>Words that came up a lot</h3>
+          <p className="panel-desc">Common topics in recent calls.</p>
           <ul className="keyword-list">
             {metrics.top_keywords.map((keyword) => (
               <li key={keyword.term}>
                 <span>{keyword.term}</span>
                 <span className="badge">{keyword.count}</span>
-                <span className="muted">{keyword.category}</span>
               </li>
             ))}
           </ul>
@@ -129,16 +201,17 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel">
-        <h3>Agent Leaderboard</h3>
+        <h3>Top performers</h3>
+        <p className="panel-desc">Who is handling the most calls and closing the most wins.</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Agent</th>
+                <th>Team member</th>
                 <th>Calls</th>
-                <th>Bookings</th>
-                <th>Booking Rate</th>
-                <th>Avg Sentiment</th>
+                <th>Wins</th>
+                <th>Success rate</th>
+                <th>Mood score</th>
               </tr>
             </thead>
             <tbody>
@@ -148,7 +221,7 @@ export default function DashboardPage() {
                   <td>{row.calls}</td>
                   <td>{row.bookings}</td>
                   <td>{(row.booking_rate * 100).toFixed(1)}%</td>
-                  <td>{row.avg_sentiment.toFixed(2)}</td>
+                  <td>{row.avg_sentiment >= 0.3 ? "Good" : row.avg_sentiment >= 0 ? "Okay" : "Low"}</td>
                 </tr>
               ))}
             </tbody>

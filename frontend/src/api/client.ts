@@ -13,6 +13,7 @@ import type {
   JobStatus,
   JobType,
   PaginatedCalls,
+  RagQueryResponse,
   SentimentLabel,
 } from "../types";
 
@@ -64,11 +65,38 @@ export const api = {
 
   getAgentMetrics: (agentId: string) => request<AgentMetrics>(`/analytics/agents/${agentId}`),
 
-  analyzeTranscript: (payload: { transcript: string; agent_id?: string; customer_name?: string }) =>
+  analyzeTranscript: (payload: {
+    transcript: string;
+    agent_id?: string;
+    customer_name?: string;
+    use_rag_context?: boolean;
+    industry?: string;
+  }) =>
     request<AnalyzeResponse>("/analyze", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  askPlaybook: (question: string, top_k = 5) =>
+    request<RagQueryResponse>("/knowledge/ask", {
+      method: "POST",
+      body: JSON.stringify({ question, top_k }),
+    }),
+
+  searchSimilarCalls: (question: string, top_k = 5) =>
+    request<RagQueryResponse>("/knowledge/similar-calls", {
+      method: "POST",
+      body: JSON.stringify({ question, top_k }),
+    }),
+
+  importCorpus: (industry?: string, limit = 50) => {
+    const query = new URLSearchParams();
+    if (industry) query.set("industry", industry);
+    query.set("limit", String(limit));
+    return request<{ imported: number; available: number }>(`/knowledge/import-corpus?${query}`, {
+      method: "POST",
+    });
+  },
 
   listJobs: (status?: JobStatus) => {
     const suffix = status ? `?status=${status}` : "";

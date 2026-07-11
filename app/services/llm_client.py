@@ -14,7 +14,11 @@ from app.models.schemas import AnalyzeResponse, SentimentLabel
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
-async def analyze_with_groq(transcript: str, agent_id: str | None = None) -> AnalyzeResponse | None:
+async def analyze_with_groq(
+    transcript: str,
+    agent_id: str | None = None,
+    rag_context: str | None = None,
+) -> AnalyzeResponse | None:
     settings = get_settings()
     if not settings.groq_api_key or not settings.enable_llm_analysis:
         return None
@@ -25,7 +29,15 @@ async def analyze_with_groq(transcript: str, agent_id: str | None = None) -> Ana
         '"booking_intent":true,"booking_confidence":0.0,"summary":"...",'
         '"topics":["..."],"risk_flags":["..."],"keywords":[{"term":"...","count":1,"category":"..."}]}'
     )
+    if rag_context:
+        system += (
+            "\n\nUse the playbook and similar-call context to improve risk_flags and summary. "
+            "Flag compliance issues when playbook context suggests them."
+        )
+
     user = f"Agent ID: {agent_id or 'unknown'}\n\nTranscript:\n{transcript[:6000]}"
+    if rag_context:
+        user += f"\n\nRAG Context:\n{rag_context[:4000]}"
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -68,6 +80,7 @@ async def analyze_with_groq(transcript: str, agent_id: str | None = None) -> Ana
         summary=str(data.get("summary", "LLM analysis completed.")),
         topics=list(data.get("topics", []))[:6],
         risk_flags=list(data.get("risk_flags", []))[:5],
+        analysis_source="groq",
     )
 
 

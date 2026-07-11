@@ -1,6 +1,6 @@
-# Conversation Insights
+# Talksmith (Conversation Insights)
 
-**Voice call analytics platform** for AI agents — sentiment, booking rates, keyword trends, ingestion pipelines, and optional LLM-powered analysis. Full-stack app with a FastAPI backend, SQLite persistence, and a React dashboard.
+**Craft better conversations** — a voice call coaching platform for support and sales teams. Review calls, spot patterns, get AI coaching tips, and find similar conversations. Full-stack app with FastAPI, SQLite, React, and optional RAG-powered analysis.
 
 ![Backend API](https://github.com/TrueLove27/conversation-insights/actions/workflows/backend-ci.yml/badge.svg)
 ![Frontend Dashboard](https://github.com/TrueLove27/conversation-insights/actions/workflows/frontend-ci.yml/badge.svg)
