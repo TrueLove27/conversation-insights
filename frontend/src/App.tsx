@@ -4,6 +4,7 @@ import AgentsPage from "./pages/Agents";
 import AnalyzePage from "./pages/Analyze";
 import CallsPage from "./pages/Calls";
 import DashboardPage from "./pages/Dashboard";
+import IntegrationsPage from "./pages/Integrations";
 import JobsPage from "./pages/Jobs";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="agents" element={<AgentsPage />} />
         <Route path="analyze" element={<AnalyzePage />} />
         <Route path="jobs" element={<JobsPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

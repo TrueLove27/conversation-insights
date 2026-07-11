@@ -10,6 +10,9 @@ services:
       - ./data:/app/data
     environment:
       - DEBUG=false
+      - DATABASE_PATH=/app/data/conversation_insights.db
+      - INGEST_API_KEY=dev-ingest-key-change-me
+      - RATE_LIMIT_DEFAULT=100/minute
     restart: unless-stopped
 
   frontend:

@@ -6,6 +6,9 @@ import type {
   CallRecord,
   DashboardMetrics,
   HealthResponse,
+  IngestionEvent,
+  IngestionResult,
+  IntegrationStatus,
   JobRecord,
   JobStatus,
   JobType,
@@ -77,6 +80,24 @@ export const api = {
   createJob: (payload: { job_type: JobType; payload?: Record<string, unknown> }) =>
     request<JobRecord>("/jobs", {
       method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getIntegrationStatus: () => request<IntegrationStatus>("/integrations/status"),
+
+  listIngestionEvents: (limit = 30) =>
+    request<IngestionEvent[]>(`/ingest/events?limit=${limit}`),
+
+  ingestCall: (payload: {
+    transcript: string;
+    agent_id: string;
+    customer_name: string;
+    phone_number?: string;
+    external_id?: string;
+  }, apiKey: string) =>
+    request<IngestionResult>("/ingest/call", {
+      method: "POST",
+      headers: { "X-API-Key": apiKey },
       body: JSON.stringify(payload),
     }),
 };

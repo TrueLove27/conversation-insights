@@ -155,3 +155,43 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: datetime
     data_files: dict[str, bool]
+    database: dict[str, Any] = Field(default_factory=dict)
+    integrations: dict[str, Any] = Field(default_factory=dict)
+    rate_limits: dict[str, str] = Field(default_factory=dict)
+
+
+class CallIngestRequest(BaseModel):
+    transcript: str = Field(min_length=20, max_length=20000)
+    agent_id: str
+    customer_name: str = Field(min_length=1, max_length=120)
+    phone_number: str | None = None
+    external_id: str | None = None
+    started_at: datetime | None = None
+    duration_seconds: int | None = Field(default=None, ge=0, le=7200)
+    language: str = "en"
+
+
+class IngestionResult(BaseModel):
+    success: bool
+    call_id: str | None = None
+    event_id: str
+    error: str | None = None
+    analysis: AnalyzeResponse | None = None
+
+
+class IngestionEvent(BaseModel):
+    id: str
+    source: str
+    external_id: str | None = None
+    status: str
+    call_id: str | None = None
+    payload: str | None = None
+    error: str | None = None
+    created_at: str
+
+
+class IntegrationStatusResponse(BaseModel):
+    database: dict[str, Any]
+    groq: dict[str, Any]
+    webhook: dict[str, Any]
+    ingest_api_key_configured: bool
