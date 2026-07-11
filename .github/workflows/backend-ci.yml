@@ -22,6 +22,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONPATH: .
+
 jobs:
   lint-and-test:
     name: Test FastAPI service
