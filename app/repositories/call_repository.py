@@ -1,31 +1,60 @@
-from pathlib import Path
+from uuid import uuid4
 
-from app.core.config import Settings, get_settings
-from app.core.database import JsonStore
-from app.models.schemas import AgentRecord, CallRecord, JobRecord
+from app.db.store import Database, get_database
+from app.models.schemas import CallRecord, JobCreateRequest, JobRecord
 
 
 class CallRepository:
-    def __init__(self, settings: Settings | None = None):
-        self._settings = settings or get_settings()
-        self._store = JsonStore[dict](self._settings.data_dir / self._settings.calls_file, default=[])
+    def __init__(self, db: Database | None = None):
+        self._db = db or get_database()
 
     def find_all(self) -> list[CallRecord]:
-        return [CallRecord.model_validate(item) for item in self._store.read_all()]
+        return self._db.list_calls()
 
     def find_by_id(self, call_id: str) -> CallRecord | None:
-        for item in self.find_all():
-            if item.id == call_id:
-                return item
-        return None
+        return self._db.get_call(call_id)
 
-    def save_all(self, calls: list[CallRecord]) -> None:
-        payload = [call.model_dump(mode="json") for call in calls]
-        self._store.write_all(payload)
+    def insert(self, call: CallRecord, source: str = "api") -> CallRecord:
+        return self._db.insert_call(call, source=source)
 
     def count(self) -> int:
-        return len(self._store.read_all())
+        return self._db.stats()["calls"]
 
     def file_exists(self) -> bool:
-        path: Path = self._settings.data_dir / self._settings.calls_file
-        return path.exists()
+        return self._db.stats()["calls"] > 0
+
+
+class AgentRepository:
+    def __init__(self, db: Database | None = None):
+        self._db = db or get_database()
+
+    def find_all(self):
+        from app.models.schemas import AgentRecord
+
+        return self._db.list_agents()
+
+    def find_by_id(self, agent_id: str):
+        return self._db.get_agent(agent_id)
+
+    def file_exists(self) -> bool:
+        return self._db.stats()["agents"] > 0
+
+
+class JobRepository:
+    def __init__(self, db: Database | None = None):
+        self._db = db or get_database()
+
+    def find_all(self) -> list[JobRecord]:
+        return self._db.list_jobs()
+
+    def find_by_id(self, job_id: str) -> JobRecord | None:
+        return self._db.get_job(job_id)
+
+    def create(self, request: JobCreateRequest) -> JobRecord:
+        return self._db.create_job(request)
+
+    def update(self, job: JobRecord) -> JobRecord:
+        return self._db.update_job(job)
+
+    def file_exists(self) -> bool:
+        return self._db.stats()["jobs"] > 0

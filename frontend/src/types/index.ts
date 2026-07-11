@@ -109,4 +109,31 @@ export interface HealthResponse {
   version: string;
   timestamp: string;
   data_files: Record<string, boolean>;
+  database: Record<string, unknown>;
+  integrations: Record<string, unknown>;
+  rate_limits: Record<string, string>;
+}
+
+export interface IntegrationStatus {
+  database: Record<string, unknown>;
+  groq: { provider: string; configured: boolean; status: string; model?: string };
+  webhook: { configured: boolean; status: string };
+  ingest_api_key_configured: boolean;
+}
+
+export interface IngestionEvent {
+  id: string;
+  source: string;
+  status: string;
+  call_id: string | null;
+  created_at: string;
+  error: string | null;
+}
+
+export interface IngestionResult {
+  success: boolean;
+  call_id: string | null;
+  event_id: string;
+  error: string | null;
+  analysis: AnalyzeResponse | null;
 }

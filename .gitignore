@@ -20,3 +20,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# SQLite
+*.db
+*.db-wal
+*.db-shm
+data/*.db
