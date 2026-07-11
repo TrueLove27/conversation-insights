@@ -2,6 +2,11 @@
 
 **Voice call analytics platform** for AI agents — sentiment, booking rates, keyword trends, ingestion pipelines, and optional LLM-powered analysis. Full-stack app with a FastAPI backend, SQLite persistence, and a React dashboard.
 
+![Backend API](https://github.com/TrueLove27/conversation-insights/actions/workflows/backend-ci.yml/badge.svg)
+![Frontend Dashboard](https://github.com/TrueLove27/conversation-insights/actions/workflows/frontend-ci.yml/badge.svg)
+![Docker Images](https://github.com/TrueLove27/conversation-insights/actions/workflows/docker-ci.yml/badge.svg)
+![Release Check](https://github.com/TrueLove27/conversation-insights/actions/workflows/release-check.yml/badge.svg)
+
 ## Highlights
 
 - Call explorer with search and filters (agent, sentiment, outcome)
@@ -82,6 +87,17 @@ Frontend (React) → API routes → Services → Repositories → SQLite
 ```
 
 Routes stay thin; business logic lives in services (analytics, analysis, ingestion, jobs). Repositories abstract SQLite persistence with JSON seed migration on first boot.
+
+## CI / GitHub Actions
+
+| Workflow | What it checks |
+|----------|----------------|
+| **Backend API** | Python 3.12 install, import check, pytest smoke tests |
+| **Frontend Dashboard** | `npm ci` + TypeScript build |
+| **Docker Images** | Backend and frontend image builds |
+| **Release Check** | Full-stack verification on every push to `main` |
+
+All workflows support manual runs via **Actions → workflow → Run workflow**.
 
 ## License
 
