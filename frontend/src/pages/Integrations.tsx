@@ -1,13 +1,16 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AgentRecord, IntegrationStatus } from "../types";
+import { Card, MetricCard, PageHeader, ServiceStatus } from "../components/ui";
 
 export default function IntegrationsPage() {
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [error, setError] = useState("");
   const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [importMsg, setImportMsg] = useState("");
+  const [syncMsg, setSyncMsg] = useState("");
 
   const load = () => {
     Promise.all([api.getIntegrationStatus(), api.listAgents()])
@@ -36,66 +39,104 @@ export default function IntegrationsPage() {
     }
   };
 
+  const rebuildIndex = async () => {
+    setSyncing(true);
+    setSyncMsg("");
+    try {
+      const res = await api.syncRag();
+      setSyncMsg(res.message || "Coaching index rebuilt.");
+      load();
+    } catch (err) {
+      setSyncMsg(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const rag = status?.rag_service;
+  const corpus = status?.corpus_service;
+
   return (
     <div className="page">
-      <header className="page-header">
-        <div>
-          <h2>Settings</h2>
-          <p>Manage your call library and check that everything is connected.</p>
-        </div>
-      </header>
+      <PageHeader title="Settings" subtitle="Manage your call library and check that everything is connected." />
 
       {error && <div className="form-error">{error}</div>}
 
-      <section className="panel">
-        <h3>Your call library</h3>
-        <p className="panel-desc">
-          Talksmith can pull in sample calls from different industries (healthcare, banking, retail, etc.)
-          so you have more than the built-in demo set to explore.
-        </p>
+      <Card title="Your call library" description="Pull in sample calls from different industries to explore.">
         {status ? (
           <p className="form-note">
             Currently loaded: <strong>{String(status.database.calls ?? 0)}</strong> calls ·{" "}
             <strong>{agents.length}</strong> team members
           </p>
         ) : null}
-        <button type="button" onClick={loadCalls} disabled={importing}>
-          {importing ? "Loading…" : "Load more sample calls"}
-        </button>
+        <div className="button-row">
+          <button type="button" onClick={loadCalls} disabled={importing}>
+            {importing ? "Loading…" : "Load more sample calls"}
+          </button>
+          <button type="button" className="secondary" onClick={rebuildIndex} disabled={syncing}>
+            {syncing ? "Rebuilding…" : "Rebuild coaching index"}
+          </button>
+        </div>
         {importMsg ? <p className="form-note">{importMsg}</p> : null}
-      </section>
+        {syncMsg ? <p className="form-note">{syncMsg}</p> : null}
+      </Card>
 
       {status && (
-        <section className="metric-grid">
-          <div className="metric-card">
-            <div className="metric-label">Smart coaching</div>
-            <div className="metric-value">{status.rag_service?.status === "connected" ? "On" : "Off"}</div>
-            <div className="metric-hint">Powers Coaching Tips & Find Similar</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Call library source</div>
-            <div className="metric-value">{status.corpus_service?.status === "connected" ? "Connected" : "Offline"}</div>
-            <div className="metric-hint">
-              {status.corpus_service?.total_calls
-                ? `${status.corpus_service.total_calls} calls available`
-                : "Start the call library service"}
+        <>
+          <section className="metric-grid">
+            <MetricCard
+              label="Smart coaching"
+              value={rag?.status === "connected" ? "On" : "Off"}
+              hint="Powers Coaching Tips & Find Similar"
+              icon="✦"
+            />
+            <MetricCard
+              label="Indexed chunks"
+              value={String((rag?.corpus_chunks as number) || 0)}
+              hint={`${String((rag?.playbook_chunks as number) || 0)} playbook chunks`}
+              icon="☰"
+            />
+            <MetricCard
+              label="Call library"
+              value={corpus?.status === "connected" ? "Connected" : "Offline"}
+              hint={corpus?.total_calls ? `${corpus.total_calls} available` : "Start corpus service"}
+              icon="◎"
+            />
+            <MetricCard
+              label="AI analysis"
+              value={status.groq.status === "connected" ? "On" : "Basic"}
+              hint="Smarter summaries on Review a Call"
+              icon="◉"
+            />
+          </section>
+
+          <Card title="Service connections" description="How Talksmith connects to the coaching engine.">
+            <div className="service-grid">
+              <ServiceStatus
+                name="RAG coaching engine"
+                status={rag?.status === "connected" ? "connected" : "offline"}
+                detail={rag?.status === "connected" ? `${rag.total_queries || 0} queries served` : "Offline"}
+              />
+              <ServiceStatus
+                name="Call library"
+                status={corpus?.status === "connected" ? "connected" : "offline"}
+                detail={corpus?.total_calls ? `${corpus.total_calls} calls` : "Not running"}
+              />
+              <ServiceStatus
+                name="Groq LLM"
+                status={status.groq.status === "connected" ? "connected" : "optional"}
+                detail={status.groq.status === "connected" ? "Connected" : "Optional — uses basic mode"}
+              />
             </div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">AI analysis</div>
-            <div className="metric-value">{status.groq.status === "connected" ? "On" : "Basic mode"}</div>
-            <div className="metric-hint">Helps Review a Call give smarter summaries</div>
-          </div>
-        </section>
+          </Card>
+        </>
       )}
 
       <details className="panel advanced-panel">
         <summary>Advanced — for developers only</summary>
-        <p className="panel-desc">
-          API keys, webhooks, and ingestion endpoints. You don't need these for normal use.
-        </p>
+        <p className="panel-desc">API keys, webhooks, and ingestion endpoints.</p>
         <p className="form-note">
-          Ingest endpoint: <code>POST /api/v1/ingest/call</code> with header <code>X-API-Key</code>
+          Ingest: <code>POST /api/v1/ingest/call</code> · RAG sync: <code>POST /api/v1/knowledge/sync-rag</code>
         </p>
       </details>
     </div>

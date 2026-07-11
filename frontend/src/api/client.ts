@@ -1,9 +1,11 @@
 import type {
+  AgentDigest,
   AgentMetrics,
   AgentRecord,
   AnalyzeResponse,
   CallOutcome,
   CallRecord,
+  ComplianceScan,
   DashboardMetrics,
   HealthResponse,
   IngestionEvent,
@@ -13,8 +15,11 @@ import type {
   JobStatus,
   JobType,
   PaginatedCalls,
+  PreCallBrief,
   RagQueryResponse,
+  RagSource,
   SentimentLabel,
+  TopicsResponse,
 } from "../types";
 
 const API_BASE = "/api/v1";
@@ -77,10 +82,10 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  askPlaybook: (question: string, top_k = 5) =>
+  askPlaybook: (question: string, top_k = 5, retrieval_only = false, category?: string) =>
     request<RagQueryResponse>("/knowledge/ask", {
       method: "POST",
-      body: JSON.stringify({ question, top_k }),
+      body: JSON.stringify({ question, top_k, retrieval_only, category }),
     }),
 
   searchSimilarCalls: (question: string, top_k = 5) =>
@@ -88,6 +93,44 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ question, top_k }),
     }),
+
+  bestPractices: (question: string, industry?: string) =>
+    request<RagQueryResponse>("/knowledge/best-practices", {
+      method: "POST",
+      body: JSON.stringify({ question, industry }),
+    }),
+
+  scanCompliance: (transcript: string) =>
+    request<ComplianceScan>("/knowledge/scan-compliance", {
+      method: "POST",
+      body: JSON.stringify({ transcript }),
+    }),
+
+  suggestScript: (transcript: string, industry?: string) =>
+    request<{ suggested_script: string; sources: RagSource[]; generator: string }>(
+      "/knowledge/suggest-script",
+      { method: "POST", body: JSON.stringify({ transcript, industry }) },
+    ),
+
+  preCallBrief: (agent_id: string, industry?: string, specialties?: string[]) =>
+    request<PreCallBrief>("/knowledge/pre-call-brief", {
+      method: "POST",
+      body: JSON.stringify({ agent_id, industry, specialties }),
+    }),
+
+  topicInsights: (industry?: string) => {
+    const suffix = industry ? `?industry=${industry}` : "";
+    return request<TopicsResponse>(`/knowledge/topics${suffix}`);
+  },
+
+  agentDigest: (agent_id: string, industry?: string) =>
+    request<AgentDigest>("/knowledge/agent-digest", {
+      method: "POST",
+      body: JSON.stringify({ agent_id, industry }),
+    }),
+
+  syncRag: () =>
+    request<{ success: boolean; message: string }>("/knowledge/sync-rag", { method: "POST" }),
 
   importCorpus: (industry?: string, limit = 50) => {
     const query = new URLSearchParams();

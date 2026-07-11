@@ -1,22 +1,29 @@
 import { FormEvent, useState } from "react";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
+import { Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
 
 export default function SimilarCallsPage() {
   const [query, setQuery] = useState("Customer wants to reschedule an appointment and has insurance questions");
   const [result, setResult] = useState<RagQueryResponse | null>(null);
+  const [bestPractices, setBestPractices] = useState<RagQueryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [industry, setIndustry] = useState("healthcare");
 
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const response = await api.searchSimilarCalls(query);
-      setResult(response);
+      const [similar, winners] = await Promise.all([
+        api.searchSimilarCalls(query),
+        api.bestPractices(query, industry),
+      ]);
+      setResult(similar);
+      setBestPractices(winners);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed — make sure Talksmith is connected");
+      setError(err instanceof Error ? err.message : "Search failed");
     } finally {
       setLoading(false);
     }
@@ -24,49 +31,65 @@ export default function SimilarCallsPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <div>
-          <h2>Find Similar Calls</h2>
-          <p>Describe your situation and see how other agents handled something like it.</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Find Similar Calls"
+        subtitle="Describe your situation and see how other agents handled something like it."
+      />
 
       <section className="split-layout">
-        <form className="panel analyze-form" onSubmit={handleSearch}>
-          <h3>Describe the call</h3>
-          <p className="panel-desc">A few words is enough — we'll find matching conversations from the library.</p>
-          <textarea
-            rows={5}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            required
-            minLength={3}
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? "Searching…" : "Find similar calls"}
-          </button>
-          {error ? <p className="form-error">{error}</p> : null}
-        </form>
+        <Card title="Describe the call" description="A few words is enough — we'll find matching conversations.">
+          <form className="analyze-form" onSubmit={handleSearch}>
+            <textarea rows={5} value={query} onChange={(e) => setQuery(e.target.value)} required minLength={3} />
+            <label htmlFor="industry">Industry</label>
+            <select id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+              <option value="healthcare">Healthcare</option>
+              <option value="saas">SaaS</option>
+              <option value="retail">Retail</option>
+              <option value="support">Support</option>
+              <option value="banking">Banking</option>
+            </select>
+            <button type="submit" disabled={loading}>
+              {loading ? "Searching…" : "Find similar calls"}
+            </button>
+            {error ? <p className="form-error">{error}</p> : null}
+          </form>
+        </Card>
 
-        <article className="panel">
-          <h3>Matching conversations</h3>
-          {!result ? (
-            <div className="page-state">Enter a description to find real examples from the call library.</div>
-          ) : result.sources.length === 0 ? (
-            <div className="page-state">No matches yet. Try loading the call library from the Overview page first.</div>
-          ) : (
-            <div className="analysis-result">
-              {result.sources.map((source) => (
-                <div key={source.chunk_id} className="source-card">
-                  {source.metadata?.industry ? (
-                    <span className="tag">{String(source.metadata.industry)}</span>
-                  ) : null}
-                  <p>{source.text}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </article>
+        <div className="stack-panels">
+          <Card title="Matching conversations">
+            {!result ? (
+              <EmptyState title="No results" message="Enter a description to search the call library." />
+            ) : result.sources.length === 0 ? (
+              <EmptyState title="No matches" message="Try loading the call library from Overview first." />
+            ) : (
+              result.sources.map((source) => (
+                <SourceCard
+                  key={source.chunk_id}
+                  text={source.text}
+                  score={source.score}
+                  tag={String(source.metadata?.industry || "")}
+                />
+              ))
+            )}
+          </Card>
+
+          <Card title="How winners handled it">
+            {!bestPractices ? (
+              <EmptyState title="Best practices" message="Search above to see high-outcome examples." />
+            ) : bestPractices.sources.length === 0 ? (
+              <EmptyState title="No examples yet" message="Load more calls and sync coaching index." />
+            ) : (
+              bestPractices.sources.map((source) => (
+                <SourceCard
+                  key={`win-${source.chunk_id}`}
+                  text={source.text}
+                  score={source.score}
+                  tag="best practice"
+                />
+              ))
+            )}
+          </Card>
+        </div>
       </section>
     </div>
   );

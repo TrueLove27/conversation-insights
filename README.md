@@ -12,7 +12,9 @@
 - Call explorer with search and filters (agent, sentiment, outcome)
 - Dashboard KPIs: booking rate, sentiment averages, volume trends
 - Per-agent performance views
-- Transcript analysis (rules engine + optional Groq LLM)
+- Transcript analysis (rules engine + optional Groq LLM + RAG context)
+- **Coaching Tips** and **Find Similar** powered by rag-service
+- **Call library import** from call-corpus-service (600+ calls)
 - **Call ingestion API** with API-key auth and webhook support
 - **SQLite database** with WAL mode, seed migration from JSON fixtures
 - **Rate limiting** on analyze and ingest endpoints (slowapi)

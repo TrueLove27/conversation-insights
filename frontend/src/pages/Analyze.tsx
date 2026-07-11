@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../api/client";
-import type { AnalyzeResponse, JobRecord } from "../types";
+import type { AnalyzeResponse } from "../types";
+import { AlertBanner, Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
 
 const SAMPLE_TRANSCRIPT =
   "Customer: Hi, I would like to schedule a product demo for next Tuesday if possible. " +
@@ -38,62 +39,77 @@ export default function AnalyzePage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <div>
-          <h2>Review a Call</h2>
-          <p>Paste a conversation and Talksmith will tell you how it went — and what could improve.</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Review a Call"
+        subtitle="Paste a conversation and Talksmith will tell you how it went — and what could improve."
+      />
 
       <section className="split-layout">
-        <form className="panel analyze-form" onSubmit={handleAnalyze}>
-          <h3>Paste the conversation</h3>
-          <p className="panel-desc">Copy what the customer and agent said. We'll analyze the tone and outcome.</p>
-          <label htmlFor="customer-name">Customer name</label>
-          <input
-            id="customer-name"
-            value={customerName}
-            onChange={(event) => setCustomerName(event.target.value)}
-          />
-          <label className="checkbox-row">
-            <input type="checkbox" checked={useCoaching} onChange={(e) => setUseCoaching(e.target.checked)} />
-            Include coaching tips from our playbook library
-          </label>
-          <label htmlFor="industry">Type of business</label>
-          <select id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
-            <option value="healthcare">Healthcare</option>
-            <option value="saas">Software / SaaS</option>
-            <option value="retail">Retail / Shopping</option>
-            <option value="support">Customer support</option>
-            <option value="banking">Banking / Finance</option>
-          </select>
-          <label htmlFor="transcript">Conversation</label>
-          <textarea
-            id="transcript"
-            rows={14}
-            value={transcript}
-            onChange={(event) => setTranscript(event.target.value)}
-            required
-            minLength={10}
-          />
-          <div className="button-row">
+        <Card title="Paste the conversation" description="Copy what the customer and agent said.">
+          <form className="analyze-form" onSubmit={handleAnalyze}>
+            <label htmlFor="customer-name">Customer name</label>
+            <input id="customer-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            <label className="checkbox-row">
+              <input type="checkbox" checked={useCoaching} onChange={(e) => setUseCoaching(e.target.checked)} />
+              Include coaching tips from our playbook library
+            </label>
+            <label htmlFor="industry">Type of business</label>
+            <select id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+              <option value="healthcare">Healthcare</option>
+              <option value="saas">Software / SaaS</option>
+              <option value="retail">Retail / Shopping</option>
+              <option value="support">Customer support</option>
+              <option value="banking">Banking / Finance</option>
+            </select>
+            <label htmlFor="transcript">Conversation</label>
+            <textarea
+              id="transcript"
+              rows={14}
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              required
+              minLength={10}
+            />
             <button type="submit" disabled={loading}>
               {loading ? "Reviewing…" : "Review this call"}
             </button>
-          </div>
-          {error ? <p className="form-error">{error}</p> : null}
-        </form>
+            {error ? <p className="form-error">{error}</p> : null}
+          </form>
+        </Card>
 
-        <article className="panel">
-          <h3>What we found</h3>
+        <Card title="What we found">
           {!result ? (
-            <div className="page-state">Paste a conversation and hit "Review this call" to see results.</div>
+            <EmptyState title="No analysis yet" message='Paste a conversation and hit "Review this call".' />
           ) : (
             <div className="analysis-result">
+              {result.escalation_required ? (
+                <AlertBanner
+                  variant="danger"
+                  title="Escalation required"
+                  message="This call contains safety or compliance risks. Follow emergency protocol immediately."
+                />
+              ) : null}
+
+              {result.compliance_flags && result.compliance_flags.length > 0 ? (
+                <AlertBanner
+                  variant="warning"
+                  title="Compliance notes"
+                  message={result.compliance_flags.join(" ")}
+                />
+              ) : null}
+
               <div className="detail-grid">
                 <div>
                   <span className="detail-label">Customer mood</span>
-                  <strong>{result.sentiment === "positive" ? "Happy" : result.sentiment === "negative" ? "Upset" : result.sentiment === "mixed" ? "Mixed" : "Neutral"}</strong>
+                  <strong>
+                    {result.sentiment === "positive"
+                      ? "Happy"
+                      : result.sentiment === "negative"
+                        ? "Upset"
+                        : result.sentiment === "mixed"
+                          ? "Mixed"
+                          : "Neutral"}
+                  </strong>
                 </div>
                 <div>
                   <span className="detail-label">Wanted to book?</span>
@@ -103,10 +119,21 @@ export default function AnalyzePage() {
                   <span className="detail-label">Confidence</span>
                   <strong>{(result.booking_confidence * 100).toFixed(0)}%</strong>
                 </div>
+                <div>
+                  <span className="detail-label">Analysis</span>
+                  <strong>{result.analysis_source || "basic"}</strong>
+                </div>
               </div>
 
               <h4>Summary</h4>
               <p className="summary">{result.summary}</p>
+
+              {result.suggested_script ? (
+                <>
+                  <h4>What to say next</h4>
+                  <div className="script-block">{result.suggested_script}</div>
+                </>
+              ) : null}
 
               {result.topics.length > 0 ? (
                 <>
@@ -123,10 +150,7 @@ export default function AnalyzePage() {
                 <>
                   <h4>Coaching suggestions</h4>
                   {result.playbook_citations.map((c) => (
-                    <div key={c.document_id + c.text.slice(0, 20)} className="source-card">
-                      <strong>{c.document_name}</strong>
-                      <p>{c.text}</p>
-                    </div>
+                    <SourceCard key={c.document_id + c.text.slice(0, 20)} title={c.document_name} text={c.text} score={c.score} />
                   ))}
                 </>
               ) : null}
@@ -135,26 +159,13 @@ export default function AnalyzePage() {
                 <>
                   <h4>Similar calls from the library</h4>
                   {result.similar_calls.map((c) => (
-                    <div key={c.document_id + c.text.slice(0, 20)} className="source-card">
-                      <p>{c.text}</p>
-                    </div>
+                    <SourceCard key={c.document_id + c.text.slice(0, 20)} text={c.text} score={c.score} />
                   ))}
-                </>
-              ) : null}
-
-              {result.risk_flags.length > 0 ? (
-                <>
-                  <h4>Things to watch out for</h4>
-                  <ul className="risk-list">
-                    {result.risk_flags.map((flag) => (
-                      <li key={flag}>{flag}</li>
-                    ))}
-                  </ul>
                 </>
               ) : null}
             </div>
           )}
-        </article>
+        </Card>
       </section>
     </div>
   );

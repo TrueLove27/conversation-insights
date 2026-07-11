@@ -1,13 +1,28 @@
 import { NavLink, Outlet } from "react-router-dom";
 
-const navItems = [
-  { to: "/", label: "Overview", end: true, hint: "How your team is doing" },
-  { to: "/calls", label: "All Calls", hint: "Listen & read transcripts" },
-  { to: "/agents", label: "Your Team", hint: "See who's performing well" },
-  { to: "/analyze", label: "Review a Call", hint: "Check one conversation" },
-  { to: "/knowledge", label: "Coaching Tips", hint: "What to say in tough moments" },
-  { to: "/similar-calls", label: "Find Similar", hint: "See how others handled it" },
-  { to: "/integrations", label: "Settings", hint: "Connections & data" },
+const navGroups = [
+  {
+    label: "Review",
+    items: [
+      { to: "/", label: "Overview", end: true, icon: "◉" },
+      { to: "/analyze", label: "Review a Call", icon: "◎" },
+      { to: "/calls", label: "All Calls", icon: "☰" },
+    ],
+  },
+  {
+    label: "Coach",
+    items: [
+      { to: "/knowledge", label: "Coaching Tips", icon: "✦" },
+      { to: "/similar-calls", label: "Find Similar", icon: "≈" },
+    ],
+  },
+  {
+    label: "Manage",
+    items: [
+      { to: "/agents", label: "Your Team", icon: "◈" },
+      { to: "/integrations", label: "Settings", icon: "⚙" },
+    ],
+  },
 ];
 
 export default function Layout() {
@@ -22,16 +37,21 @@ export default function Layout() {
           </div>
         </div>
         <nav>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-              title={item.hint}
-            >
-              <span>{item.label}</span>
-            </NavLink>
+          {navGroups.map((group) => (
+            <div key={group.label} className="nav-group">
+              <span className="nav-group-label">{group.label}</span>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <footer className="sidebar-footer">

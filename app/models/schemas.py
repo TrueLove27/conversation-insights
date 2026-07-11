@@ -154,6 +154,9 @@ class AnalyzeResponse(BaseModel):
     risk_flags: list[str]
     playbook_citations: list[RagCitation] = Field(default_factory=list)
     similar_calls: list[RagCitation] = Field(default_factory=list)
+    compliance_flags: list[str] = Field(default_factory=list)
+    escalation_required: bool = False
+    suggested_script: str | None = None
     analysis_source: str = "rules"
 
 

@@ -1,21 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { api } from "../api/client";
-import type { DashboardMetrics } from "../types";
+import type { DashboardMetrics, TopicsResponse } from "../types";
+import { Card, LoadingSkeleton, MetricCard, PageHeader } from "../components/ui";
 
 const SENTIMENT_COLORS: Record<string, string> = {
   positive: "#22c55e",
@@ -39,18 +29,13 @@ const OUTCOME_LABELS: Record<string, string> = {
   disconnected: "Hung up",
 };
 
-function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <article className="metric-card">
-      <span className="metric-label">{label}</span>
-      <strong className="metric-value">{value}</strong>
-      {hint ? <span className="metric-hint">{hint}</span> : null}
-    </article>
-  );
+function MetricCardLocal({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon?: string }) {
+  return <MetricCard label={label} value={value} hint={hint} icon={icon} />;
 }
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [topics, setTopics] = useState<TopicsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -67,6 +52,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboard();
+    api.topicInsights().then(setTopics).catch(() => null);
   }, []);
 
   const handleLoadSampleCalls = async () => {
@@ -83,7 +69,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) return <div className="page-state">Loading your overview…</div>;
+  if (loading) return <LoadingSkeleton rows={5} />;
   if (error) return <div className="page-state error">Something went wrong: {error}</div>;
   if (!metrics) return null;
 
@@ -121,23 +107,42 @@ export default function DashboardPage() {
         {importMsg ? <p className="form-note">{importMsg}</p> : null}
       </section>
 
-      <header className="page-header">
-        <div>
-          <h2>Team Overview</h2>
-          <p>A quick snapshot of how conversations are going.</p>
+      <section className="getting-started panel">
+        <h3>Getting started</h3>
+        <div className="checklist">
+          <div className={`check-item ${metrics.total_calls >= 50 ? "done" : ""}`}>① Load call library</div>
+          <div className="check-item">② Try Coaching Tips</div>
+          <div className="check-item">③ Review one call</div>
         </div>
-      </header>
+      </section>
+
+      <PageHeader title="Team Overview" subtitle="A quick snapshot of how conversations are going." />
 
       <section className="metric-grid">
-        <MetricCard label="Calls handled" value={String(metrics.total_calls)} hint="In your library" />
-        <MetricCard label="Success rate" value={`${(metrics.booking_rate * 100).toFixed(1)}%`} hint="Calls that ended well" />
-        <MetricCard
+        <MetricCardLocal label="Calls handled" value={String(metrics.total_calls)} hint="In your library" icon="☰" />
+        <MetricCardLocal label="Success rate" value={`${(metrics.booking_rate * 100).toFixed(1)}%`} hint="Calls that ended well" icon="✓" />
+        <MetricCardLocal
           label="Customer mood"
           value={metrics.avg_sentiment_score >= 0.3 ? "Mostly good" : metrics.avg_sentiment_score >= 0 ? "Mixed" : "Needs attention"}
           hint="Based on call tone"
+          icon="◉"
         />
-        <MetricCard label="Avg call length" value={`${Math.round(metrics.avg_duration_seconds / 60)} min`} hint="Typical conversation" />
+        <MetricCardLocal label="Avg call length" value={`${Math.round(metrics.avg_duration_seconds / 60)} min`} hint="Typical conversation" icon="⏱" />
       </section>
+
+      {topics && topics.topics.length > 0 ? (
+        <Card title="Trending issues" description="Common topics from your call library (powered by RAG).">
+          <div className="topic-grid">
+            {topics.topics.map((t) => (
+              <div key={t.topic} className="topic-card">
+                <strong>{t.topic}</strong>
+                <span>{t.count} calls</span>
+                <p>{t.sample_text}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <section className="chart-grid">
         <article className="panel">

@@ -91,7 +91,44 @@ export interface AnalyzeResponse {
   risk_flags: string[];
   playbook_citations?: RagCitation[];
   similar_calls?: RagCitation[];
+  compliance_flags?: string[];
+  escalation_required?: boolean;
+  suggested_script?: string | null;
   analysis_source?: string;
+}
+
+export interface ComplianceScan {
+  risk_level: string;
+  flags: string[];
+  matched_keywords: string[];
+  escalation_required: boolean;
+  recommendation: string;
+}
+
+export interface PreCallBrief {
+  agent_id: string;
+  industry: string | null;
+  summary: string;
+  tips: string[];
+  playbooks: RagSource[];
+}
+
+export interface TopicInsight {
+  topic: string;
+  count: number;
+  sample_text: string;
+}
+
+export interface TopicsResponse {
+  industry: string | null;
+  topics: TopicInsight[];
+}
+
+export interface AgentDigest {
+  agent_id: string;
+  summary: string;
+  focus_areas: string[];
+  recommended_playbooks: RagSource[];
 }
 
 export interface RagCitation {

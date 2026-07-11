@@ -19,6 +19,9 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
     rag_context_str: str | None = None
     similar: list = []
     playbooks: list = []
+    compliance_flags: list[str] = []
+    escalation_required = False
+    suggested_script: str | None = None
 
     if body.use_rag_context and settings.enable_rag_context:
         try:
@@ -33,15 +36,38 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
         except Exception:
             pass
 
+        try:
+            compliance = await get_rag_client().scan_compliance(body.transcript)
+            compliance_flags = compliance.get("flags", [])
+            escalation_required = compliance.get("escalation_required", False)
+            if compliance.get("recommendation"):
+                compliance_flags.append(compliance["recommendation"])
+        except Exception:
+            pass
+
+        try:
+            script = await get_rag_client().suggest_script(body.transcript, body.industry)
+            suggested_script = script.get("suggested_script")
+        except Exception:
+            pass
+
     llm_result = await analyze_with_groq(body.transcript, body.agent_id, rag_context_str)
     if llm_result:
         llm_result.playbook_citations = playbooks
         llm_result.similar_calls = similar
+        llm_result.compliance_flags = compliance_flags
+        llm_result.escalation_required = escalation_required
+        llm_result.suggested_script = suggested_script
+        if rag_context_str:
+            llm_result.analysis_source = "llm+rag"
         return llm_result
 
     result = service.analyze_transcript(body)
     result.playbook_citations = playbooks
     result.similar_calls = similar
+    result.compliance_flags = compliance_flags
+    result.escalation_required = escalation_required
+    result.suggested_script = suggested_script
     if rag_context_str:
         result.analysis_source = "rules+rag"
     return result

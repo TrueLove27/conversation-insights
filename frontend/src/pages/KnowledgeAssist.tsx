@@ -1,9 +1,21 @@
 import { FormEvent, useState } from "react";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
+import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard } from "../components/ui";
+
+const STARTERS = [
+  { label: "Price objection", q: "The customer says our price is too high. What should I say?" },
+  { label: "Refund request", q: "Customer wants a refund but policy says no. How do I handle it?", category: "refund" },
+  { label: "Escalation", q: "Customer is angry and wants a supervisor. What do I do?", category: "escalation" },
+  { label: "Scheduling", q: "Customer wants to reschedule their appointment.", category: "scheduling" },
+];
+
+const CATEGORIES = ["pricing", "refund", "insurance", "escalation", "scheduling"];
 
 export default function KnowledgeAssistPage() {
-  const [question, setQuestion] = useState("The customer says our price is too high. What should I say?");
+  const [question, setQuestion] = useState(STARTERS[0].q);
+  const [category, setCategory] = useState<string | undefined>();
+  const [guidesOnly, setGuidesOnly] = useState(false);
   const [result, setResult] = useState<RagQueryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +25,7 @@ export default function KnowledgeAssistPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.askPlaybook(question);
+      const response = await api.askPlaybook(question, 5, guidesOnly, category);
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not get coaching tips");
@@ -24,52 +36,82 @@ export default function KnowledgeAssistPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <div>
-          <h2>Coaching Tips</h2>
-          <p>Stuck on a call? Ask what to say — Talksmith searches proven playbooks and gives you plain advice.</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Coaching Tips"
+        subtitle="Stuck on a call? Ask what to say — Talksmith searches proven playbooks and gives you plain advice."
+      />
+
+      <div className="chip-row">
+        {STARTERS.map((s) => (
+          <Chip
+            key={s.label}
+            label={s.label}
+            active={question === s.q}
+            onClick={() => {
+              setQuestion(s.q);
+              setCategory(s.category);
+            }}
+          />
+        ))}
+      </div>
 
       <section className="split-layout">
-        <form className="panel analyze-form" onSubmit={handleAsk}>
-          <h3>What's the situation?</h3>
-          <p className="panel-desc">Describe what the customer said or what you're unsure about.</p>
-          <textarea
-            rows={6}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            required
-            minLength={3}
-            placeholder="e.g. Customer wants a refund but policy says no…"
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? "Finding advice…" : "Get coaching tips"}
-          </button>
-          {error ? <p className="form-error">{error}</p> : null}
-        </form>
+        <Card title="What's the situation?" description="Describe what the customer said or what you're unsure about.">
+          <form className="analyze-form" onSubmit={handleAsk}>
+            <textarea
+              rows={6}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              required
+              minLength={3}
+              placeholder="e.g. Customer wants a refund but policy says no…"
+            />
+            <label className="checkbox-row">
+              <input type="checkbox" checked={guidesOnly} onChange={(e) => setGuidesOnly(e.target.checked)} />
+              Show guides only (skip AI summary)
+            </label>
+            <div className="chip-row">
+              {CATEGORIES.map((c) => (
+                <Chip key={c} label={c} active={category === c} onClick={() => setCategory(category === c ? undefined : c)} />
+              ))}
+            </div>
+            <button type="submit" disabled={loading}>
+              {loading ? "Finding advice…" : "Get coaching tips"}
+            </button>
+            {error ? <p className="form-error">{error}</p> : null}
+          </form>
+        </Card>
 
-        <article className="panel">
-          <h3>Recommended response</h3>
+        <Card title="Recommended response">
           {!result ? (
-            <div className="page-state">Ask a question and we'll pull advice from our coaching library.</div>
+            <EmptyState title="No advice yet" message="Ask a question or pick a starter above." />
           ) : (
             <div className="analysis-result">
-              <p className="summary">{result.answer || "See the reference material below."}</p>
+              {result.answer.includes("Safety situation") ? (
+                <AlertBanner variant="danger" title="Safety protocol" message={result.answer} />
+              ) : (
+                <p className="summary answer-block">{result.answer || "See the reference material below."}</p>
+              )}
+              <div className="generator-badge">
+                Source: {result.generator === "guide-fallback" ? "Coaching library" : result.generator}
+              </div>
               {result.sources.length > 0 ? (
                 <>
                   <h4>Based on these guides</h4>
                   {result.sources.map((source) => (
-                    <div key={source.chunk_id} className="source-card">
-                      <strong>{source.document_name}</strong>
-                      <p>{source.text}</p>
-                    </div>
+                    <SourceCard
+                      key={source.chunk_id}
+                      title={source.document_name}
+                      text={source.text}
+                      score={source.score}
+                      tag={String(source.metadata?.industry || "")}
+                    />
                   ))}
                 </>
               ) : null}
             </div>
           )}
-        </article>
+        </Card>
       </section>
     </div>
   );
