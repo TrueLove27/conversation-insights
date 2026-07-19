@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export function PageHeader({
@@ -147,6 +148,69 @@ export function Button({
     <button type={type} className={`${variantClass} ${className}`.trim()} {...rest}>
       {children}
     </button>
+  );
+}
+
+export function CopyButton({
+  text,
+  label = "Copy",
+  className = "",
+}: {
+  text: string;
+  label?: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const value = text.trim();
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.dispatchEvent(new CustomEvent("talksmith:toast", { detail: "Copied!" }));
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.dispatchEvent(new CustomEvent("talksmith:toast", { detail: "Copy failed" }));
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="glass"
+      className={`copy-btn ${className}`.trim()}
+      onClick={handleCopy}
+      disabled={!text.trim()}
+    >
+      {copied ? "Copied!" : label}
+    </Button>
+  );
+}
+
+export function ToastHost() {
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const onToast = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      setMessage(detail);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setMessage(null), 2200);
+    };
+    window.addEventListener("talksmith:toast", onToast);
+    return () => {
+      window.removeEventListener("talksmith:toast", onToast);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
+  if (!message) return null;
+  return (
+    <div className="toast" role="status" aria-live="polite">
+      {message}
+    </div>
   );
 }
 

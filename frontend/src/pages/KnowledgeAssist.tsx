@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
-import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard, Button } from "../components/ui";
+import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard, Button, CopyButton } from "../components/ui";
 
 const STARTERS = [
   { label: "Price objection", q: "The customer says our price is too high. What should I say?" },
@@ -108,7 +108,13 @@ export default function KnowledgeAssistPage() {
               {result.answer.includes("Safety situation") ? (
                 <AlertBanner variant="danger" title="Safety protocol" message={result.answer} />
               ) : (
-                <p className="summary answer-block">{result.answer || "See the reference material below."}</p>
+                <>
+                  <div className="section-heading-row">
+                    <h4>What to say</h4>
+                    <CopyButton text={result.answer} label="Copy advice" />
+                  </div>
+                  <p className="summary answer-block">{result.answer || "See the reference material below."}</p>
+                </>
               )}
               <div className="generator-badge">
                 Source: {result.generator === "guide-fallback" ? "Coaching library" : result.generator}

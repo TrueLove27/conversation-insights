@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../api/client";
 import type { AnalyzeResponse } from "../types";
-import { AlertBanner, Card, EmptyState, PageHeader, SourceCard, Button } from "../components/ui";
+import { AlertBanner, Card, EmptyState, PageHeader, SourceCard, Button, CopyButton } from "../components/ui";
 
 const SAMPLE_TRANSCRIPT =
   "Customer: Hi, I would like to schedule a product demo for next Tuesday if possible. " +
@@ -191,14 +191,20 @@ export default function AnalyzePage() {
                 </>
               ) : null}
 
-              <h4>Summary</h4>
+              <div className="section-heading-row">
+                <h4>Summary</h4>
+                <CopyButton text={result.summary} label="Copy summary" />
+              </div>
               <p className="summary">{result.summary}</p>
 
               <p className="form-note">Analysis source: {result.analysis_source || "basic"}</p>
 
               {result.suggested_script ? (
                 <>
-                  <h4>What to say next</h4>
+                  <div className="section-heading-row">
+                    <h4>What to say next</h4>
+                    <CopyButton text={result.suggested_script} label="Copy script" />
+                  </div>
                   <div className="script-block">{result.suggested_script}</div>
                 </>
               ) : null}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useSystemHealth } from "../hooks/useSystemHealth";
+import { ToastHost } from "./ui";
 
 const navGroups = [
   {
@@ -109,6 +110,7 @@ export default function Layout() {
       <main className="content">
         <Outlet />
       </main>
+      <ToastHost />
     </div>
   );
 }
