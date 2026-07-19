@@ -44,15 +44,35 @@ docker compose up --build
 
 **Local development**
 
-```bash
-cp .env.example .env
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+You need **two processes**: the FastAPI backend on port **8000** and the Vite frontend on port **5173**. The UI proxies `/api` to `http://localhost:8000`. If the API is down, pages like Overview show `Request failed: 500` (proxy error), not a frontend bug.
 
-cd frontend && npm install && npm run dev
+```bash
+# From the repo root (conversation-insights/)
+cp .env.example .env
+pip install -r requirements.txt   # or: py -3 -m pip install -r requirements.txt
+
+# Terminal 1 — API (required)
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# Windows if `python` / `uvicorn` are not on PATH:
+#   py -3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# Terminal 2 — UI
+cd frontend
+npm install
+npm run dev
 ```
 
-Frontend dev server: http://localhost:5173
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| API docs | http://localhost:8000/docs |
+| Health | http://localhost:8000/api/v1/health |
+
+**Quick checks if Overview fails**
+
+1. `http://localhost:5173` refused → start `npm run dev` in `frontend/`
+2. UI loads but `Request failed: 500` → start the API on port 8000
+3. Admin actions (import, jobs, ingest) → set the API key in **Settings** (default from `.env.example`: `dev-ingest-key-change-me`)
 
 ### Environment variables
 

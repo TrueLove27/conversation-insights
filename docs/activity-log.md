@@ -23,3 +23,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Impact Plan H: Agents page outcome bar chart + recommended playbook cards on digest
 - **2026-07-19** - Impact Plan I: All Calls “Get coaching tips” deep-links to Coaching Tips with pre-filled question
 - **2026-07-19** - Impact Plan J: All Calls download (.txt) and print call summary export
+- **2026-07-19** - README: clarify dual-process local dev, Windows `py -3 -m uvicorn`, and 500-when-API-down note
