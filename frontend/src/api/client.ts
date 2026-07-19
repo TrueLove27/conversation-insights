@@ -66,7 +66,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<HealthResponse>("/health"),
 
-  getDashboard: () => request<DashboardMetrics>("/analytics/dashboard"),
+  getDashboard: (params?: { from_date?: string; to_date?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.from_date) query.set("from_date", params.from_date);
+    if (params?.to_date) query.set("to_date", params.to_date);
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return request<DashboardMetrics>(`/analytics/dashboard${suffix}`);
+  },
 
   listCalls: (params?: {
     agent_id?: string;

@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Any
+
 from app.db.store import Database, get_database
 from app.models.schemas import CallFilterParams, CallRecord, JobCreateRequest, JobRecord
 
@@ -11,6 +14,13 @@ class CallRepository:
 
     def find_filtered(self, filters: CallFilterParams) -> tuple[list[CallRecord], int]:
         return self._db.list_calls_filtered(filters)
+
+    def dashboard_metrics(
+        self,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        return self._db.dashboard_metrics(from_date=from_date, to_date=to_date)
 
     def find_by_id(self, call_id: str) -> CallRecord | None:
         return self._db.get_call(call_id)

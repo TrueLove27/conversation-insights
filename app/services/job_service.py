@@ -1,11 +1,15 @@
 import asyncio
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import get_settings
 from app.models.schemas import JobCreateRequest, JobRecord, JobStatus, JobType
 from app.repositories.job_repository import JobRepository
 from app.services.analysis_service import AnalysisService
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class JobService:
@@ -44,7 +48,7 @@ class JobService:
                 return
 
             job.status = JobStatus.RUNNING
-            job.started_at = datetime.utcnow()
+            job.started_at = _utc_now()
             job.progress = 5
             self._jobs.update(job)
 
@@ -64,14 +68,14 @@ class JobService:
             job.result = self._build_result(job)
             job.status = JobStatus.COMPLETED
             job.progress = 100
-            job.completed_at = datetime.utcnow()
+            job.completed_at = _utc_now()
             self._jobs.update(job)
         except Exception as exc:  # noqa: BLE001
             job = self._jobs.find_by_id(job_id)
             if job:
                 job.status = JobStatus.FAILED
                 job.error = str(exc)
-                job.completed_at = datetime.utcnow()
+                job.completed_at = _utc_now()
                 self._jobs.update(job)
         finally:
             self._running_tasks.discard(job_id)
@@ -99,7 +103,7 @@ class JobService:
             return {
                 "agent_id": agent_id,
                 "report_url": f"/reports/agents/{agent_id}/summary.pdf",
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": _utc_now().isoformat(),
             }
 
         if job.job_type == JobType.KEYWORD_EXTRACTION:

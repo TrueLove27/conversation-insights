@@ -10,16 +10,17 @@
 ## Highlights
 
 - Call explorer with search and filters (agent, sentiment, outcome)
-- Dashboard KPIs: booking rate, sentiment averages, volume trends
+- Dashboard KPIs via SQL aggregations (booking rate, sentiment, volume trends) with 7d/30d/All date presets
 - Per-agent performance views
 - Transcript analysis (rules engine + optional Groq LLM + RAG context)
 - **Coaching Tips** and **Find Similar** powered by rag-service
 - **Call library import** from call-corpus-service (600+ calls)
-- **Call ingestion API** with API-key auth and webhook support
+- **Call ingestion API** with API-key auth and webhook support; admin ops (sync/import/events) require `X-API-Key`
+- Background RAG re-sync after ingest/import (`RAG_SYNC_ON_INGEST`)
 - **SQLite database** with WAL mode, seed migration from JSON fixtures
-- **Rate limiting** on analyze and ingest endpoints (slowapi)
-- Integrations dashboard for pipeline status and live ingest testing
-- Simulated async job queue with progress tracking
+- **Rate limiting** on analyze, ingest, and knowledge endpoints (slowapi)
+- Integrations dashboard for pipeline status; Settings UI stores admin API key
+- Simulated async job queue with progress tracking (Background Jobs nav)
 
 ## Stack
 
@@ -58,11 +59,15 @@ Frontend dev server: http://localhost:5173
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_PATH` | SQLite file path (default: `data/conversation_insights.db`) |
-| `INGEST_API_KEY` | Key for `POST /ingest/call` (`X-API-Key` header) |
+| `INGEST_API_KEY` | Key for ingest + admin knowledge ops (`X-API-Key` header) |
 | `WEBHOOK_SECRET` | Optional secret for webhook ingest |
 | `GROQ_API_KEY` | Optional — enables LLM transcript analysis |
 | `ENABLE_LLM_ANALYSIS` | `true`/`false` — use Groq when key is set |
-| `RATE_LIMIT_DEFAULT` | Default rate limit (e.g. `100/minute`) |
+| `RAG_SERVICE_URL` | rag-service base URL (default `http://localhost:8002`) |
+| `CORPUS_SERVICE_URL` | call-corpus-service URL (default `http://localhost:8004`) |
+| `ENABLE_RAG_CONTEXT` | Include RAG context in `/analyze` when available |
+| `RAG_SYNC_ON_INGEST` | Schedule background RAG `sync_all` after ingest/import |
+| `RATE_LIMIT_DEFAULT` | Default rate limit (e.g. `120/minute`) |
 
 ## API overview
 
@@ -70,12 +75,14 @@ Frontend dev server: http://localhost:5173
 |----------|-------------|
 | `GET /api/v1/health` | Service health, DB stats, integration status |
 | `GET /api/v1/calls` | List and filter calls |
-| `GET /api/v1/analytics/dashboard` | Dashboard metrics |
+| `GET /api/v1/analytics/dashboard` | Dashboard metrics (optional `from_date` / `to_date`; SQL aggregates) |
 | `POST /api/v1/analyze` | Analyze a transcript (rate limited) |
 | `POST /api/v1/ingest/call` | Ingest call via API key |
 | `POST /api/v1/ingest/webhook` | Webhook ingest (optional secret) |
-| `GET /api/v1/ingest/events` | Recent ingestion audit log |
-| `GET /api/v1/integrations/status` | Groq, webhook, DB status |
+| `GET /api/v1/ingest/events` | Recent ingestion audit log (API key) |
+| `POST /api/v1/knowledge/sync-rag` | Rebuild coaching index (API key) |
+| `POST /api/v1/knowledge/import-corpus` | Import sample calls (API key) |
+| `GET /api/v1/integrations/status` | Groq, webhook, RAG, corpus, DB status |
 | `GET /api/v1/jobs` | Background job status |
 | `POST /api/v1/jobs` | Enqueue a job |
 
@@ -88,7 +95,7 @@ Frontend (React) → API routes → Services → Repositories → SQLite
                               Ingestion pipeline
 ```
 
-Routes stay thin; business logic lives in services (analytics, analysis, ingestion, jobs). Repositories abstract SQLite persistence with JSON seed migration on first boot.
+Routes stay thin; business logic lives in services (analytics, analysis, ingestion, jobs). Call list filtering and dashboard KPIs run as SQL aggregations (no full-transcript Python scans). Repositories abstract SQLite persistence with JSON seed migration on first boot.
 
 ## CI / GitHub Actions
 

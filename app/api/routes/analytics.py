@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from datetime import datetime
 
-from app.models.schemas import AgentMetrics, AgentRecord, DashboardMetrics
+from fastapi import APIRouter, HTTPException, Query
+
+from app.models.schemas import AgentMetrics, DashboardMetrics
 from app.services.analytics_service import AnalyticsService
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -8,8 +10,11 @@ service = AnalyticsService()
 
 
 @router.get("/dashboard", response_model=DashboardMetrics)
-def get_dashboard() -> DashboardMetrics:
-    return service.get_dashboard_metrics()
+def get_dashboard(
+    from_date: datetime | None = Query(default=None),
+    to_date: datetime | None = Query(default=None),
+) -> DashboardMetrics:
+    return service.get_dashboard_metrics(from_date=from_date, to_date=to_date)
 
 
 @router.get("/agents/{agent_id}", response_model=AgentMetrics)

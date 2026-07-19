@@ -115,6 +115,8 @@ class Database:
 
                 CREATE INDEX IF NOT EXISTS idx_calls_agent ON calls(agent_id);
                 CREATE INDEX IF NOT EXISTS idx_calls_started ON calls(started_at);
+                CREATE INDEX IF NOT EXISTS idx_calls_outcome ON calls(outcome);
+                CREATE INDEX IF NOT EXISTS idx_calls_sentiment ON calls(sentiment);
                 CREATE INDEX IF NOT EXISTS idx_ingestion_created ON ingestion_events(created_at);
                 """
             )
@@ -219,6 +221,162 @@ class Database:
                 [*params, filters.limit, filters.offset],
             ).fetchall()
             return [self._row_to_call(r) for r in rows], int(total)
+
+    @staticmethod
+    def _date_filter(
+        from_date: datetime | None,
+        to_date: datetime | None,
+        *,
+        column: str = "started_at",
+    ) -> tuple[str, list[Any]]:
+        clauses: list[str] = []
+        params: list[Any] = []
+        if from_date:
+            clauses.append(f"{column} >= ?")
+            params.append(from_date.isoformat())
+        if to_date:
+            clauses.append(f"{column} <= ?")
+            params.append(to_date.isoformat())
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        return where, params
+
+    def dashboard_metrics(
+        self,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+        *,
+        keyword_limit: int = 10,
+    ) -> dict[str, Any]:
+        """Aggregate dashboard KPIs in SQL without loading transcripts."""
+        where, params = self._date_filter(from_date, to_date)
+        where_c, params_c = self._date_filter(from_date, to_date, column="c.started_at")
+
+        with self.connection() as conn:
+            totals = conn.execute(
+                f"""
+                SELECT
+                    COUNT(*) AS total_calls,
+                    COALESCE(AVG(sentiment_score), 0) AS avg_sentiment,
+                    COALESCE(AVG(duration_seconds), 0) AS avg_duration,
+                    COALESCE(SUM(CASE WHEN outcome = 'booked' THEN 1 ELSE 0 END), 0) AS booked
+                FROM calls
+                {where}
+                """,
+                params,
+            ).fetchone()
+
+            total_calls = int(totals["total_calls"] or 0)
+            booked = int(totals["booked"] or 0)
+            booking_rate = round(booked / total_calls, 4) if total_calls else 0.0
+            avg_sentiment = round(float(totals["avg_sentiment"] or 0), 4)
+            avg_duration = round(float(totals["avg_duration"] or 0), 2)
+
+            sentiment_distribution = {
+                row["sentiment"]: int(row["count"])
+                for row in conn.execute(
+                    f"SELECT sentiment, COUNT(*) AS count FROM calls {where} GROUP BY sentiment",
+                    params,
+                ).fetchall()
+            }
+            outcome_distribution = {
+                row["outcome"]: int(row["count"])
+                for row in conn.execute(
+                    f"SELECT outcome, COUNT(*) AS count FROM calls {where} GROUP BY outcome",
+                    params,
+                ).fetchall()
+            }
+
+            calls_by_day = [
+                {
+                    "date": row["day"],
+                    "calls": int(row["calls"]),
+                    "bookings": int(row["bookings"]),
+                }
+                for row in conn.execute(
+                    f"""
+                    SELECT
+                        date(started_at) AS day,
+                        COUNT(*) AS calls,
+                        SUM(CASE WHEN outcome = 'booked' THEN 1 ELSE 0 END) AS bookings
+                    FROM calls
+                    {where}
+                    GROUP BY date(started_at)
+                    ORDER BY day
+                    """,
+                    params,
+                ).fetchall()
+            ]
+
+            leaderboard_rows = conn.execute(
+                f"""
+                SELECT
+                    c.agent_id AS agent_id,
+                    COALESCE(a.name, c.agent_id) AS name,
+                    COUNT(*) AS calls,
+                    SUM(CASE WHEN c.outcome = 'booked' THEN 1 ELSE 0 END) AS bookings,
+                    AVG(c.sentiment_score) AS avg_sentiment
+                FROM calls c
+                LEFT JOIN agents a ON a.id = c.agent_id
+                {where_c}
+                GROUP BY c.agent_id
+                """,
+                params_c,
+            ).fetchall()
+
+            agent_leaderboard: list[dict[str, Any]] = []
+            for row in leaderboard_rows:
+                calls_count = int(row["calls"])
+                bookings = int(row["bookings"])
+                agent_leaderboard.append(
+                    {
+                        "agent_id": row["agent_id"],
+                        "name": row["name"],
+                        "calls": calls_count,
+                        "bookings": bookings,
+                        "avg_sentiment": round(float(row["avg_sentiment"] or 0), 4),
+                        "booking_rate": round(bookings / calls_count, 4) if calls_count else 0.0,
+                    }
+                )
+            agent_leaderboard.sort(
+                key=lambda row: (row["booking_rate"], row["avg_sentiment"]),
+                reverse=True,
+            )
+
+            keyword_counter: dict[str, int] = {}
+            keyword_categories: dict[str, str] = {}
+            for row in conn.execute(f"SELECT keywords FROM calls {where}", params).fetchall():
+                try:
+                    items = json.loads(row["keywords"] or "[]")
+                except json.JSONDecodeError:
+                    continue
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    term = str(item.get("term", "")).strip()
+                    if not term:
+                        continue
+                    count = int(item.get("count", 1) or 1)
+                    keyword_counter[term] = keyword_counter.get(term, 0) + count
+                    keyword_categories[term] = str(item.get("category") or "general")
+
+            top_keywords = [
+                {"term": term, "count": count, "category": keyword_categories[term]}
+                for term, count in sorted(
+                    keyword_counter.items(), key=lambda item: item[1], reverse=True
+                )[:keyword_limit]
+            ]
+
+            return {
+                "total_calls": total_calls,
+                "booking_rate": booking_rate,
+                "avg_sentiment_score": avg_sentiment,
+                "avg_duration_seconds": avg_duration,
+                "sentiment_distribution": sentiment_distribution,
+                "outcome_distribution": outcome_distribution,
+                "calls_by_day": calls_by_day,
+                "top_keywords": top_keywords,
+                "agent_leaderboard": agent_leaderboard,
+            }
 
     def get_call(self, call_id: str) -> CallRecord | None:
         with self.connection() as conn:
