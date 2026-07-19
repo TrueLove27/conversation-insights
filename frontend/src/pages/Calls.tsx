@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
 import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
+import { AddCallForm } from "../components/AddCallForm";
 import { TranscriptView } from "../components/TranscriptView";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
@@ -27,6 +28,7 @@ export default function CallsPage() {
   const [agentId, setAgentId] = useState("");
   const [outcome, setOutcome] = useState<CallOutcome | "">("");
   const [sentiment, setSentiment] = useState<SentimentLabel | "">("");
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const { data, loading, error, setError, reload } = useAsyncLoad<PaginatedCalls>(
     (signal) =>
@@ -90,6 +92,17 @@ export default function CallsPage() {
     navigate(`/calls/${call.id}`);
   };
 
+  const handleCallAdded = (newCallId: string) => {
+    setShowAddForm(false);
+    setSearch("");
+    setSearchInput("");
+    setAgentId("");
+    setOutcome("");
+    setSentiment("");
+    navigate(`/calls/${newCallId}`);
+    reload();
+  };
+
   const loadCalls = () => {
     setError(null);
     setSearch(searchInput);
@@ -108,7 +121,20 @@ export default function CallsPage() {
           <h2>All Calls</h2>
           <p>Browse every conversation. Click a call to read what was said.</p>
         </div>
+        <div className="header-actions">
+          <Button type="button" onClick={() => setShowAddForm((open) => !open)}>
+            {showAddForm ? "Hide add form" : "Add your own call"}
+          </Button>
+        </div>
       </header>
+
+      {showAddForm ? (
+        <AddCallForm
+          agents={agents}
+          onSuccess={handleCallAdded}
+          onCancel={() => setShowAddForm(false)}
+        />
+      ) : null}
 
       <section className="filters panel">
         <input

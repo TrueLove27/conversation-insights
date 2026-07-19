@@ -15,3 +15,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Plan 7 async cleanup: AbortController in useAsyncLoad, lean CallSummary agent metrics, typed knowledge responses, remove dead list_calls/integrations analyze, IngestionEvent type sync
 - **2026-07-19** - Impact Plan A: All Calls transcript detail renders as Agent/Customer chat bubbles instead of raw pre text
 - **2026-07-19** - Impact Plan B: deep links — `/calls/:id`, `/agents/:id`; Overview leaderboard and agent recent calls navigate to detail
+- **2026-07-19** - Impact Plan C: Add your own call form on All Calls — paste transcript, ingest+analyze, jump to new call
