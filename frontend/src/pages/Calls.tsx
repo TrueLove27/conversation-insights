@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
-import { EmptyState, LoadingSkeleton } from "../components/ui";
+import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
+import { TranscriptView } from "../components/TranscriptView";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 function formatDuration(seconds: number): string {
@@ -105,17 +106,17 @@ export default function CallsPage() {
           <option value="negative">Negative</option>
           <option value="mixed">Mixed</option>
         </select>
-        <button type="button" onClick={loadCalls}>
+        <Button type="button" onClick={loadCalls}>
           Apply
-        </button>
+        </Button>
       </section>
 
       {error ? (
         <div className="page-state error retry-row">
           <span>{error}</span>
-          <button type="button" onClick={loadCalls}>
+          <Button type="button" variant="glass" onClick={loadCalls}>
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
       {loading ? <LoadingSkeleton rows={5} /> : null}
@@ -186,7 +187,7 @@ export default function CallsPage() {
                   ))}
                 </div>
                 <h4>Transcript</h4>
-                <pre className="transcript">{selectedCall.transcript}</pre>
+                <TranscriptView text={selectedCall.transcript} />
               </>
             ) : (
               <EmptyState title="No call selected" message="No calls match the current filters." />

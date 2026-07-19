@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { api } from "../api/client";
 import type { DashboardMetrics, TopicsResponse } from "../types";
-import { Card, Chip, EmptyState, LoadingSkeleton, MetricCard, PageHeader } from "../components/ui";
+import { Card, Chip, EmptyState, LoadingSkeleton, MetricCard, PageHeader, Button } from "../components/ui";
 
 const SENTIMENT_COLORS: Record<string, string> = {
   positive: "#22c55e",
@@ -118,9 +118,9 @@ export default function DashboardPage() {
         {showLoadMore ? (
           <div className="welcome-action">
             <p className="form-note">You're seeing a small demo set. Load the full sample library to explore more.</p>
-            <button type="button" onClick={handleLoadSampleCalls} disabled={importing}>
+            <Button type="button" onClick={handleLoadSampleCalls} disabled={importing}>
               {importing ? "Loading calls…" : "Load full call library (600+)"}
-            </button>
+            </Button>
           </div>
         ) : null}
         {importMsg ? <p className="form-note">{importMsg}</p> : null}

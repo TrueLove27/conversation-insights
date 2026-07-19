@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export function PageHeader({
   title,
@@ -121,6 +121,24 @@ export function AlertBanner({
       <strong>{title}</strong>
       <p>{message}</p>
     </div>
+  );
+}
+
+export function Button({
+  children,
+  variant = "glow",
+  className = "",
+  type = "button",
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "glow" | "glass" | "trace";
+}) {
+  const variantClass =
+    variant === "glass" ? "secondary" : variant === "trace" ? "btn-trace" : "";
+  return (
+    <button type={type} className={`${variantClass} ${className}`.trim()} {...rest}>
+      {children}
+    </button>
   );
 }
 

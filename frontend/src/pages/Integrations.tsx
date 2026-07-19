@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, getAdminApiKey, setAdminApiKey } from "../api/client";
 import type { AgentRecord, IntegrationStatus } from "../types";
-import { Card, MetricCard, PageHeader, ServiceStatus } from "../components/ui";
+import { Card, MetricCard, PageHeader, ServiceStatus, Button } from "../components/ui";
 
 export default function IntegrationsPage() {
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
@@ -82,9 +82,9 @@ export default function IntegrationsPage() {
           autoComplete="off"
         />
         <div className="button-row">
-          <button type="button" onClick={saveKey}>
+          <Button type="button" onClick={saveKey}>
             Save API key
-          </button>
+          </Button>
         </div>
         {keySaved ? <p className="form-note">API key saved in this browser.</p> : null}
         <p className="form-note">
@@ -100,12 +100,12 @@ export default function IntegrationsPage() {
           </p>
         ) : null}
         <div className="button-row">
-          <button type="button" onClick={loadCalls} disabled={importing}>
+          <Button type="button" onClick={loadCalls} disabled={importing}>
             {importing ? "Loading…" : "Load more sample calls"}
-          </button>
-          <button type="button" className="secondary" onClick={rebuildIndex} disabled={syncing}>
+          </Button>
+          <Button type="button" variant="glass" onClick={rebuildIndex} disabled={syncing}>
             {syncing ? "Rebuilding…" : "Rebuild coaching index"}
-          </button>
+          </Button>
         </div>
         {importMsg ? <p className="form-note">{importMsg}</p> : null}
         {syncMsg ? <p className="form-note">{syncMsg}</p> : null}

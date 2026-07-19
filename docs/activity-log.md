@@ -13,3 +13,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Plan 5 real jobs: batch/keyword/agent_report use live data; POST /jobs requires API key; webhook fail-closed without secret; default key startup warning
 - **2026-07-19** - Plan 6 rule engine + CI: word-boundary phrase hits, tighter booking intent, prefix keyword categories, golden analysis tests, ruff/mypy in backend CI
 - **2026-07-19** - Plan 7 async cleanup: AbortController in useAsyncLoad, lean CallSummary agent metrics, typed knowledge responses, remove dead list_calls/integrations analyze, IngestionEvent type sync
+- **2026-07-19** - Impact Plan A: All Calls transcript detail renders as Agent/Customer chat bubbles instead of raw pre text

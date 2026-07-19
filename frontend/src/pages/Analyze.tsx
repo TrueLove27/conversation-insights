@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../api/client";
 import type { AnalyzeResponse } from "../types";
-import { AlertBanner, Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
+import { AlertBanner, Card, EmptyState, PageHeader, SourceCard, Button } from "../components/ui";
 
 const SAMPLE_TRANSCRIPT =
   "Customer: Hi, I would like to schedule a product demo for next Tuesday if possible. " +
@@ -70,9 +70,9 @@ export default function AnalyzePage() {
               required
               minLength={10}
             />
-            <button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading ? "Reviewing…" : "Review this call"}
-            </button>
+            </Button>
             {error ? <p className="form-error">{error}</p> : null}
           </form>
         </Card>

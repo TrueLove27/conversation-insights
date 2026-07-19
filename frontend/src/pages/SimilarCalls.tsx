@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
-import { AlertBanner, Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
+import { AlertBanner, Card, EmptyState, PageHeader, SourceCard, Button } from "../components/ui";
 
 function isCoachingOfflineError(message: string): boolean {
   return /502|RAG service unavailable|unreachable|Failed to fetch|NetworkError/i.test(message);
@@ -66,9 +66,9 @@ export default function SimilarCallsPage() {
               <option value="support">Support</option>
               <option value="banking">Banking</option>
             </select>
-            <button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading ? "Searching…" : "Find similar calls"}
-            </button>
+            </Button>
             {error && !isCoachingOfflineError(error) ? <p className="form-error">{error}</p> : null}
           </form>
         </Card>

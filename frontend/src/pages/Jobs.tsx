@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { JobRecord, JobStatus, JobType } from "../types";
-import { EmptyState, LoadingSkeleton } from "../components/ui";
+import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 const JOB_TYPES: JobType[] = ["batch_analysis", "transcript_analysis", "agent_report", "keyword_extraction"];
@@ -96,9 +96,9 @@ export default function JobsPage() {
               </option>
             ))}
           </select>
-          <button type="button" onClick={enqueueDemoJob}>
+          <Button type="button" onClick={enqueueDemoJob}>
             Enqueue Job
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -120,15 +120,16 @@ export default function JobsPage() {
       {displayError ? (
         <div className="page-state error retry-row">
           <span>{displayError}</span>
-          <button
+          <Button
             type="button"
+            variant="glass"
             onClick={() => {
               setActionError(null);
               reload();
             }}
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
 

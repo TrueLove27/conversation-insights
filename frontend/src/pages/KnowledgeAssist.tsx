@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
-import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard } from "../components/ui";
+import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard, Button } from "../components/ui";
 
 const STARTERS = [
   { label: "Price objection", q: "The customer says our price is too high. What should I say?" },
@@ -93,9 +93,9 @@ export default function KnowledgeAssistPage() {
                 <Chip key={c} label={c} active={category === c} onClick={() => setCategory(category === c ? undefined : c)} />
               ))}
             </div>
-            <button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading ? "Finding advice…" : "Get coaching tips"}
-            </button>
+            </Button>
             {error && !isCoachingOfflineError(error) ? <p className="form-error">{error}</p> : null}
           </form>
         </Card>
