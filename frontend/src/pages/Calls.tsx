@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
 import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
@@ -16,8 +17,11 @@ function badgeClass(prefix: string, value: string): string {
 }
 
 export default function CallsPage() {
+  const { callId } = useParams<{ callId?: string }>();
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
+  const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [agentId, setAgentId] = useState("");
@@ -45,15 +49,46 @@ export default function CallsPage() {
 
   useEffect(() => {
     if (!data) return;
+    setDeepLinkError(null);
+
+    if (callId) {
+      const inList = data.items.find((item) => item.id === callId);
+      if (inList) {
+        setSelectedCall(inList);
+        return;
+      }
+      const controller = new AbortController();
+      api
+        .getCall(callId, controller.signal)
+        .then((call) => {
+          if (!controller.signal.aborted) setSelectedCall(call);
+        })
+        .catch((err: unknown) => {
+          if (controller.signal.aborted) return;
+          setDeepLinkError(err instanceof Error ? err.message : "Call not found");
+          if (data.items.length > 0) {
+            setSelectedCall(data.items[0]);
+            navigate(`/calls/${data.items[0].id}`, { replace: true });
+          } else {
+            setSelectedCall(null);
+          }
+        });
+      return () => controller.abort();
+    }
+
     if (data.items.length > 0) {
-      setSelectedCall((current) => {
-        if (current && data.items.some((item) => item.id === current.id)) return current;
-        return data.items[0];
-      });
+      setSelectedCall(data.items[0]);
+      navigate(`/calls/${data.items[0].id}`, { replace: true });
     } else {
       setSelectedCall(null);
     }
-  }, [data]);
+  }, [data, callId, navigate]);
+
+  const selectCall = (call: CallRecord) => {
+    setSelectedCall(call);
+    setDeepLinkError(null);
+    navigate(`/calls/${call.id}`);
+  };
 
   const loadCalls = () => {
     setError(null);
@@ -119,6 +154,7 @@ export default function CallsPage() {
           </Button>
         </div>
       ) : null}
+      {deepLinkError ? <div className="page-state error">{deepLinkError}</div> : null}
       {loading ? <LoadingSkeleton rows={5} /> : null}
 
       {!loading && data ? (
@@ -139,7 +175,7 @@ export default function CallsPage() {
                     <button
                       type="button"
                       className={selectedCall?.id === call.id ? "call-item active" : "call-item"}
-                      onClick={() => setSelectedCall(call)}
+                      onClick={() => selectCall(call)}
                     >
                       <strong>{call.customer_name}</strong>
                       <span>{new Date(call.started_at).toLocaleString()}</span>
@@ -162,7 +198,11 @@ export default function CallsPage() {
                 <div className="detail-grid">
                   <div>
                     <span className="detail-label">Agent</span>
-                    <strong>{agentName}</strong>
+                    <strong>
+                      <Link className="inline-link" to={`/agents/${selectedCall.agent_id}`}>
+                        {agentName}
+                      </Link>
+                    </strong>
                   </div>
                   <div>
                     <span className="detail-label">Duration</span>

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 export function PageHeader({
   title,
@@ -76,12 +77,14 @@ export function SourceCard({
   score,
   tag,
   generator,
+  to,
 }: {
   title?: string;
   text: string;
   score?: number;
   tag?: string;
   generator?: string;
+  to?: string;
 }) {
   return (
     <div className="source-card enhanced">
@@ -102,6 +105,11 @@ export function SourceCard({
         <div className="relevance-bar">
           <div className="relevance-fill" style={{ width: `${Math.round(score * 100)}%` }} />
         </div>
+      ) : null}
+      {to ? (
+        <Link className="inline-link source-open-link" to={to}>
+          Open full call →
+        </Link>
       ) : null}
     </div>
   );

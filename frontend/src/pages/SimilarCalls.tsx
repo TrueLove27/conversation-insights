@@ -8,6 +8,15 @@ function isCoachingOfflineError(message: string): boolean {
   return /502|RAG service unavailable|unreachable|Failed to fetch|NetworkError/i.test(message);
 }
 
+function callPathFromSource(documentId: string | undefined): string | undefined {
+  if (!documentId) return undefined;
+  const id = documentId.trim();
+  if (/^call[-_]/i.test(id) || /^[a-f0-9-]{8,}$/i.test(id)) {
+    return `/calls/${encodeURIComponent(id)}`;
+  }
+  return undefined;
+}
+
 export default function SimilarCallsPage() {
   const [query, setQuery] = useState("Customer wants to reschedule an appointment and has insurance questions");
   const [result, setResult] = useState<RagQueryResponse | null>(null);
@@ -86,6 +95,7 @@ export default function SimilarCallsPage() {
                   text={source.text}
                   score={source.score}
                   tag={String(source.metadata?.industry || "")}
+                  to={callPathFromSource(source.document_id)}
                 />
               ))
             )}
@@ -103,6 +113,7 @@ export default function SimilarCallsPage() {
                   text={source.text}
                   score={source.score}
                   tag="best practice"
+                  to={callPathFromSource(source.document_id)}
                 />
               ))
             )}

@@ -17,7 +17,9 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
           <Route path="calls" element={<CallsPage />} />
+          <Route path="calls/:callId" element={<CallsPage />} />
           <Route path="agents" element={<AgentsPage />} />
+          <Route path="agents/:agentId" element={<AgentsPage />} />
           <Route path="analyze" element={<AnalyzePage />} />
           <Route path="knowledge" element={<KnowledgeAssistPage />} />
           <Route path="similar-calls" element={<SimilarCallsPage />} />

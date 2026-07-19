@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -130,8 +131,8 @@ export default function DashboardPage() {
         <h3>Getting started</h3>
         <div className="checklist">
           <div className={`check-item ${metrics.total_calls >= 50 || range !== "all" ? "done" : ""}`}>① Load call library</div>
-          <div className="check-item">② Try Coaching Tips</div>
-          <div className="check-item">③ Review one call</div>
+          <Link to="/knowledge" className="check-item check-link">② Try Coaching Tips</Link>
+          <Link to="/calls" className="check-item check-link">③ Review one call</Link>
         </div>
       </section>
 
@@ -255,12 +256,24 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {metrics.agent_leaderboard.map((row) => (
-                    <tr key={row.agent_id}>
-                      <td>{row.name}</td>
-                      <td>{row.calls}</td>
-                      <td>{row.bookings}</td>
-                      <td>{(row.booking_rate * 100).toFixed(1)}%</td>
-                      <td>{row.avg_sentiment >= 0.3 ? "Good" : row.avg_sentiment >= 0 ? "Okay" : "Low"}</td>
+                    <tr key={row.agent_id} className="row-link">
+                      <td>
+                        <Link to={`/agents/${row.agent_id}`}>{row.name}</Link>
+                      </td>
+                      <td>
+                        <Link to={`/agents/${row.agent_id}`}>{row.calls}</Link>
+                      </td>
+                      <td>
+                        <Link to={`/agents/${row.agent_id}`}>{row.bookings}</Link>
+                      </td>
+                      <td>
+                        <Link to={`/agents/${row.agent_id}`}>{(row.booking_rate * 100).toFixed(1)}%</Link>
+                      </td>
+                      <td>
+                        <Link to={`/agents/${row.agent_id}`}>
+                          {row.avg_sentiment >= 0.3 ? "Good" : row.avg_sentiment >= 0 ? "Okay" : "Low"}
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

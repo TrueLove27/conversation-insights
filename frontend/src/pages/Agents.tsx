@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api/client";
 import type { AgentDigest, AgentMetrics, AgentRecord, PreCallBrief } from "../types";
@@ -12,6 +13,8 @@ function isAbortError(err: unknown): boolean {
 }
 
 export default function AgentsPage() {
+  const { agentId: routeAgentId } = useParams<{ agentId?: string }>();
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
@@ -28,7 +31,6 @@ export default function AgentsPage() {
       .then((records) => {
         if (controller.signal.aborted) return;
         setAgents(records);
-        if (records.length > 0) setSelectedId(records[0].id);
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted || isAbortError(err)) return;
@@ -39,6 +41,18 @@ export default function AgentsPage() {
       });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (agents.length === 0) return;
+    const routeValid = routeAgentId && agents.some((a) => a.id === routeAgentId);
+    if (routeValid) {
+      if (selectedId !== routeAgentId) setSelectedId(routeAgentId);
+      return;
+    }
+    const fallback = agents[0].id;
+    if (selectedId !== fallback) setSelectedId(fallback);
+    if (routeAgentId !== fallback) navigate(`/agents/${fallback}`, { replace: true });
+  }, [agents, routeAgentId, selectedId, navigate]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -74,6 +88,11 @@ export default function AgentsPage() {
     return () => controller.abort();
   }, [selectedId, agents]);
 
+  const selectAgent = (id: string) => {
+    setSelectedId(id);
+    navigate(`/agents/${id}`);
+  };
+
   if (loading) return <LoadingSkeleton rows={4} />;
   if (error && agents.length === 0) return <div className="page-state error">{error}</div>;
 
@@ -99,7 +118,7 @@ export default function AgentsPage() {
             key={agent.id}
             type="button"
             className={selectedId === agent.id ? "agent-card active" : "agent-card"}
-            onClick={() => setSelectedId(agent.id)}
+            onClick={() => selectAgent(agent.id)}
           >
             <div className="agent-card-top">
               <strong>{agent.name}</strong>
@@ -179,11 +198,19 @@ export default function AgentsPage() {
                   </thead>
                   <tbody>
                     {metrics.recent_calls.map((call) => (
-                      <tr key={call.id}>
-                        <td>{call.customer_name}</td>
-                        <td>{call.outcome.replace("_", " ")}</td>
-                        <td>{call.sentiment}</td>
-                        <td>{new Date(call.started_at).toLocaleString()}</td>
+                      <tr key={call.id} className="row-link">
+                        <td>
+                          <Link to={`/calls/${call.id}`}>{call.customer_name}</Link>
+                        </td>
+                        <td>
+                          <Link to={`/calls/${call.id}`}>{call.outcome.replace("_", " ")}</Link>
+                        </td>
+                        <td>
+                          <Link to={`/calls/${call.id}`}>{call.sentiment}</Link>
+                        </td>
+                        <td>
+                          <Link to={`/calls/${call.id}`}>{new Date(call.started_at).toLocaleString()}</Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
