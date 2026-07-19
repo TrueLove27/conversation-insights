@@ -158,6 +158,9 @@ class AnalyzeResponse(BaseModel):
     escalation_required: bool = False
     suggested_script: str | None = None
     analysis_source: str = "rules"
+    rag_used: bool = False
+    rag_degraded: bool = False
+    rag_warnings: list[str] = Field(default_factory=list)
 
 
 class JobCreateRequest(BaseModel):

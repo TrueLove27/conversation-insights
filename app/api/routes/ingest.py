@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+import logging
 
 from app.core.config import get_settings
 from app.core.limiter import limiter
@@ -7,6 +8,7 @@ from app.services.ingestion_service import IngestionService
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 service = IngestionService()
+logger = logging.getLogger(__name__)
 
 
 def _verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -22,9 +24,12 @@ async def ingest_call(
     source: str = Query(default="api"),
     _: None = Depends(_verify_api_key),
 ) -> IngestionResult:
+    logger.info("ingest_call agent_id=%s source=%s", body.agent_id, source)
     result = service.ingest(body, source=source)
     if not result.success:
+        logger.warning("ingest_call failed: %s", result.error)
         raise HTTPException(status_code=422, detail=result.error)
+    logger.info("ingest_call success call_id=%s", result.call_id)
     return result
 
 

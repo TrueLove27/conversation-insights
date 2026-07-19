@@ -1,7 +1,5 @@
-from uuid import uuid4
-
 from app.db.store import Database, get_database
-from app.models.schemas import CallRecord, JobCreateRequest, JobRecord
+from app.models.schemas import CallFilterParams, CallRecord, JobCreateRequest, JobRecord
 
 
 class CallRepository:
@@ -10,6 +8,9 @@ class CallRepository:
 
     def find_all(self) -> list[CallRecord]:
         return self._db.list_calls()
+
+    def find_filtered(self, filters: CallFilterParams) -> tuple[list[CallRecord], int]:
+        return self._db.list_calls_filtered(filters)
 
     def find_by_id(self, call_id: str) -> CallRecord | None:
         return self._db.get_call(call_id)
@@ -29,8 +30,6 @@ class AgentRepository:
         self._db = db or get_database()
 
     def find_all(self):
-        from app.models.schemas import AgentRecord
-
         return self._db.list_agents()
 
     def find_by_id(self, agent_id: str):

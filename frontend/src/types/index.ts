@@ -95,6 +95,9 @@ export interface AnalyzeResponse {
   escalation_required?: boolean;
   suggested_script?: string | null;
   analysis_source?: string;
+  rag_used?: boolean;
+  rag_degraded?: boolean;
+  rag_warnings?: string[];
 }
 
 export interface ComplianceScan {

@@ -8,6 +8,17 @@ def test_health(client):
     assert body["database"]["calls"] >= 0
 
 
+def test_health_includes_rag_integration(client):
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert "integrations" in body
+    assert "rag" in body["integrations"]
+    assert "reachable" in body["integrations"]["rag"]
+    assert "detail" in body["integrations"]["rag"]
+    assert "X-Request-ID" in response.headers
+
+
 def test_list_calls(client):
     response = client.get("/api/v1/calls?limit=5")
     assert response.status_code == 200
@@ -15,6 +26,38 @@ def test_list_calls(client):
     assert "items" in body
     assert "total" in body
     assert body["total"] > 0
+
+
+def test_list_calls_filter_by_sentiment(client):
+    response = client.get("/api/v1/calls?sentiment=positive&limit=50")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] > 0
+    assert all(item["sentiment"] == "positive" for item in body["items"])
+
+
+def test_list_calls_filter_by_agent_id(client):
+    response = client.get("/api/v1/calls?agent_id=agent-001&limit=50")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] > 0
+    assert all(item["agent_id"] == "agent-001" for item in body["items"])
+
+
+def test_list_calls_pagination(client):
+    first = client.get("/api/v1/calls?limit=2&offset=0")
+    second = client.get("/api/v1/calls?limit=2&offset=2")
+    assert first.status_code == 200
+    assert second.status_code == 200
+    page1 = first.json()
+    page2 = second.json()
+    assert len(page1["items"]) == 2
+    assert len(page2["items"]) == 2
+    assert page1["total"] == page2["total"]
+    assert page1["total"] > 4
+    ids1 = {item["id"] for item in page1["items"]}
+    ids2 = {item["id"] for item in page2["items"]}
+    assert ids1.isdisjoint(ids2)
 
 
 def test_dashboard_metrics(client):
@@ -38,6 +81,34 @@ def test_analyze_transcript(client):
     body = response.json()
     assert "sentiment" in body
     assert "booking_intent" in body
+
+
+async def _raise_rag_down(*_args, **_kwargs):
+    raise ConnectionError("rag-service unreachable")
+
+
+def test_analyze_rag_degraded_when_rag_down(client, monkeypatch):
+    from app.clients.rag_client import RagClient
+
+    monkeypatch.setattr(RagClient, "context_for_analysis", _raise_rag_down)
+    monkeypatch.setattr(RagClient, "scan_compliance", _raise_rag_down)
+    monkeypatch.setattr(RagClient, "suggest_script", _raise_rag_down)
+
+    response = client.post(
+        "/api/v1/analyze",
+        json={
+            "transcript": "Agent: Thanks for calling today. Customer: I want to book a demo for Tuesday afternoon.",
+            "agent_id": "agent-001",
+            "customer_name": "Test User",
+            "use_rag_context": True,
+            "industry": "healthcare",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "sentiment" in body
+    assert body["rag_degraded"] is True
+    assert len(body["rag_warnings"]) >= 1
 
 
 def test_ingest_call_requires_api_key(client):

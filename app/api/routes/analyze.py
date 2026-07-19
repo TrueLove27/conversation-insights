@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Request
 
 from app.core.config import get_settings
@@ -10,6 +12,7 @@ from app.api.routes.knowledge import citations_from_rag
 
 router = APIRouter(prefix="/analyze", tags=["analyze"])
 service = AnalysisService()
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=AnalyzeResponse)
@@ -22,6 +25,9 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
     compliance_flags: list[str] = []
     escalation_required = False
     suggested_script: str | None = None
+    rag_used = False
+    rag_degraded = False
+    rag_warnings: list[str] = []
 
     if body.use_rag_context and settings.enable_rag_context:
         try:
@@ -33,8 +39,12 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
             for s in rag_raw.get("similar_calls", []):
                 parts.append(f"[Similar call: {s.get('document_name')}] {s.get('text', '')[:200]}")
             rag_context_str = "\n".join(parts) if parts else None
-        except Exception:
-            pass
+            rag_used = True
+        except Exception as exc:
+            rag_degraded = True
+            warning = "RAG context unavailable"
+            rag_warnings.append(warning)
+            logger.warning("%s: %s", warning, exc)
 
         try:
             compliance = await get_rag_client().scan_compliance(body.transcript)
@@ -42,14 +52,22 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
             escalation_required = compliance.get("escalation_required", False)
             if compliance.get("recommendation"):
                 compliance_flags.append(compliance["recommendation"])
-        except Exception:
-            pass
+            rag_used = True
+        except Exception as exc:
+            rag_degraded = True
+            warning = "Compliance scan unavailable"
+            rag_warnings.append(warning)
+            logger.warning("%s: %s", warning, exc)
 
         try:
             script = await get_rag_client().suggest_script(body.transcript, body.industry)
             suggested_script = script.get("suggested_script")
-        except Exception:
-            pass
+            rag_used = True
+        except Exception as exc:
+            rag_degraded = True
+            warning = "Script suggestion unavailable"
+            rag_warnings.append(warning)
+            logger.warning("%s: %s", warning, exc)
 
     llm_result = await analyze_with_groq(body.transcript, body.agent_id, rag_context_str)
     if llm_result:
@@ -58,6 +76,9 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
         llm_result.compliance_flags = compliance_flags
         llm_result.escalation_required = escalation_required
         llm_result.suggested_script = suggested_script
+        llm_result.rag_used = rag_used
+        llm_result.rag_degraded = rag_degraded
+        llm_result.rag_warnings = rag_warnings
         if rag_context_str:
             llm_result.analysis_source = "llm+rag"
         return llm_result
@@ -68,6 +89,9 @@ async def analyze_transcript(request: Request, body: AnalyzeRequest) -> AnalyzeR
     result.compliance_flags = compliance_flags
     result.escalation_required = escalation_required
     result.suggested_script = suggested_script
+    result.rag_used = rag_used
+    result.rag_degraded = rag_degraded
+    result.rag_warnings = rag_warnings
     if rag_context_str:
         result.analysis_source = "rules+rag"
     return result

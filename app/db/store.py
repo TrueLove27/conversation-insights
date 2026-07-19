@@ -6,7 +6,7 @@ import json
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 from uuid import uuid4
@@ -14,6 +14,7 @@ from uuid import uuid4
 from app.core.config import Settings, get_settings
 from app.models.schemas import (
     AgentRecord,
+    CallFilterParams,
     CallOutcome,
     CallRecord,
     JobCreateRequest,
@@ -23,6 +24,10 @@ from app.models.schemas import (
     KeywordHit,
     SentimentLabel,
 )
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Database:
@@ -178,6 +183,43 @@ class Database:
             rows = conn.execute("SELECT * FROM calls ORDER BY started_at DESC").fetchall()
             return [self._row_to_call(r) for r in rows]
 
+    def list_calls_filtered(self, filters: CallFilterParams) -> tuple[list[CallRecord], int]:
+        """Filter and paginate calls in SQL. Returns (items, total)."""
+        clauses: list[str] = []
+        params: list[Any] = []
+
+        if filters.agent_id:
+            clauses.append("agent_id = ?")
+            params.append(filters.agent_id)
+        if filters.outcome:
+            clauses.append("outcome = ?")
+            params.append(filters.outcome.value)
+        if filters.sentiment:
+            clauses.append("sentiment = ?")
+            params.append(filters.sentiment.value)
+        if filters.from_date:
+            clauses.append("started_at >= ?")
+            params.append(filters.from_date.isoformat())
+        if filters.to_date:
+            clauses.append("started_at <= ?")
+            params.append(filters.to_date.isoformat())
+        if filters.search:
+            clauses.append(
+                "(LOWER(transcript) LIKE ? OR LOWER(customer_name) LIKE ? OR LOWER(COALESCE(summary, '')) LIKE ?)"
+            )
+            like = f"%{filters.search.lower()}%"
+            params.extend([like, like, like])
+
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+        with self.connection() as conn:
+            total = conn.execute(f"SELECT COUNT(*) FROM calls {where}", params).fetchone()[0]
+            rows = conn.execute(
+                f"SELECT * FROM calls {where} ORDER BY started_at DESC LIMIT ? OFFSET ?",
+                [*params, filters.limit, filters.offset],
+            ).fetchall()
+            return [self._row_to_call(r) for r in rows], int(total)
+
     def get_call(self, call_id: str) -> CallRecord | None:
         with self.connection() as conn:
             row = conn.execute("SELECT * FROM calls WHERE id = ?", (call_id,)).fetchone()
@@ -204,7 +246,7 @@ class Database:
             id=str(uuid4()),
             job_type=request.job_type,
             status=JobStatus.PENDING,
-            created_at=datetime.utcnow(),
+            created_at=_utc_now(),
             payload=request.payload,
         )
         with self.connection() as conn:
@@ -256,7 +298,7 @@ class Database:
                     call_id,
                     json.dumps(payload),
                     error,
-                    datetime.utcnow().isoformat(),
+                    _utc_now().isoformat(),
                 ),
             )
         return event_id

@@ -90,6 +90,18 @@ export default function AnalyzePage() {
                 />
               ) : null}
 
+              {result.rag_degraded ? (
+                <AlertBanner
+                  variant="warning"
+                  title="RAG context unavailable — showing rules/LLM analysis only"
+                  message={
+                    result.rag_warnings && result.rag_warnings.length > 0
+                      ? result.rag_warnings.join(". ")
+                      : "Coaching enrichment from the playbook library could not be loaded."
+                  }
+                />
+              ) : null}
+
               {result.compliance_flags && result.compliance_flags.length > 0 ? (
                 <AlertBanner
                   variant="warning"
