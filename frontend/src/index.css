@@ -343,6 +343,10 @@ nav {
   gap: 1rem;
 }
 
+.chart-span-2 {
+  grid-column: 1 / -1;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

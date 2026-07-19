@@ -1,9 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { api } from "../api/client";
 import type { AgentDigest, AgentMetrics, AgentRecord, PreCallBrief } from "../types";
 import { Card, EmptyState, LoadingSkeleton, PageHeader, SourceCard } from "../components/ui";
+
+const OUTCOME_LABELS: Record<string, string> = {
+  booked: "Booked",
+  not_booked: "Not booked",
+  callback: "Callback",
+  voicemail: "Voicemail",
+  disconnected: "Hung up",
+};
 
 function isAbortError(err: unknown): boolean {
   return (
@@ -93,6 +111,14 @@ export default function AgentsPage() {
     navigate(`/agents/${id}`);
   };
 
+  const outcomeData = useMemo(() => {
+    if (!metrics) return [];
+    return Object.entries(metrics.outcome_breakdown).map(([name, value]) => ({
+      name: OUTCOME_LABELS[name] ?? name.replace("_", " "),
+      value,
+    }));
+  }, [metrics]);
+
   if (loading) return <LoadingSkeleton rows={4} />;
   if (error && agents.length === 0) return <div className="page-state error">{error}</div>;
 
@@ -161,11 +187,28 @@ export default function AgentsPage() {
       {!detailLoading && digest ? (
         <Card title="Weekly coaching digest" description="Focus areas powered by playbook search.">
           <p className="summary">{digest.summary}</p>
-          <div className="tag-row">
-            {digest.focus_areas.map((f) => (
-              <span key={f} className="tag">{f}</span>
-            ))}
-          </div>
+          {digest.focus_areas.length > 0 ? (
+            <div className="tag-row">
+              {digest.focus_areas.map((f) => (
+                <span key={f} className="tag">
+                  {f}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {digest.recommended_playbooks && digest.recommended_playbooks.length > 0 ? (
+            <>
+              <h4>Recommended playbooks</h4>
+              {digest.recommended_playbooks.slice(0, 4).map((p) => (
+                <SourceCard
+                  key={p.chunk_id || `${p.document_id}-${p.text.slice(0, 24)}`}
+                  title={p.document_name}
+                  text={p.text}
+                  score={p.score}
+                />
+              ))}
+            </>
+          ) : null}
         </Card>
       ) : null}
 
@@ -174,7 +217,11 @@ export default function AgentsPage() {
           <Card title={`Sentiment trend — ${metrics.agent.name}`}>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={metrics.sentiment_trend}>
-                <XAxis dataKey="timestamp" stroke="#94a3b8" tickFormatter={(v: string) => new Date(v).toLocaleDateString()} />
+                <XAxis
+                  dataKey="timestamp"
+                  stroke="#94a3b8"
+                  tickFormatter={(v: string) => new Date(v).toLocaleDateString()}
+                />
                 <YAxis domain={[-1, 1]} stroke="#94a3b8" />
                 <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
                 <Line type="monotone" dataKey="sentiment_score" stroke="#f59e0b" strokeWidth={2} dot />
@@ -182,7 +229,23 @@ export default function AgentsPage() {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="Recent calls">
+          <Card title="How calls ended" description="Outcomes from this agent's recent calls.">
+            {outcomeData.length === 0 ? (
+              <EmptyState title="No outcomes yet" message="This agent has no recent call outcomes to chart." />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={outcomeData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} stroke="#94a3b8" />
+                  <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+                  <Bar dataKey="value" fill="#14b8a6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+
+          <Card title="Recent calls" className="chart-span-2">
             {metrics.recent_calls.length === 0 ? (
               <EmptyState title="No calls" message="This agent has no recent calls yet." />
             ) : (

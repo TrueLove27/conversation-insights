@@ -20,3 +20,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Impact Plan E: Copy buttons on coaching advice / scripts with Copied! toast
 - **2026-07-19** - Impact Plan F: Jobs detail shows human-readable reports instead of raw JSON payloads
 - **2026-07-19** - Impact Plan G: All Calls pagination (Load more), 7d/30d date filters, search highlight in transcript
+- **2026-07-19** - Impact Plan H: Agents page outcome bar chart + recommended playbook cards on digest
