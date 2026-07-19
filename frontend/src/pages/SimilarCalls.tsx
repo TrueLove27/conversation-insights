@@ -1,7 +1,12 @@
 import { FormEvent, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
-import { Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
+import { AlertBanner, Card, EmptyState, PageHeader, SourceCard } from "../components/ui";
+
+function isCoachingOfflineError(message: string): boolean {
+  return /502|RAG service unavailable|unreachable|Failed to fetch|NetworkError/i.test(message);
+}
 
 export default function SimilarCallsPage() {
   const [query, setQuery] = useState("Customer wants to reschedule an appointment and has insurance questions");
@@ -36,6 +41,19 @@ export default function SimilarCallsPage() {
         subtitle="Describe your situation and see how other agents handled something like it."
       />
 
+      {error && isCoachingOfflineError(error) ? (
+        <AlertBanner
+          variant="warning"
+          title="Coaching library unavailable"
+          message="The RAG coaching engine could not be reached. Open Settings to check connections or rebuild the index."
+        />
+      ) : null}
+      {error && isCoachingOfflineError(error) ? (
+        <p className="form-note">
+          <Link to="/integrations">Open Settings</Link> to check coaching / rebuild index.
+        </p>
+      ) : null}
+
       <section className="split-layout">
         <Card title="Describe the call" description="A few words is enough — we'll find matching conversations.">
           <form className="analyze-form" onSubmit={handleSearch}>
@@ -51,7 +69,7 @@ export default function SimilarCallsPage() {
             <button type="submit" disabled={loading}>
               {loading ? "Searching…" : "Find similar calls"}
             </button>
-            {error ? <p className="form-error">{error}</p> : null}
+            {error && !isCoachingOfflineError(error) ? <p className="form-error">{error}</p> : null}
           </form>
         </Card>
 

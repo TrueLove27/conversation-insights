@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
 import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard } from "../components/ui";
@@ -11,6 +12,10 @@ const STARTERS = [
 ];
 
 const CATEGORIES = ["pricing", "refund", "insurance", "escalation", "scheduling"];
+
+function isCoachingOfflineError(message: string): boolean {
+  return /502|RAG service unavailable|unreachable|Failed to fetch|NetworkError/i.test(message);
+}
 
 export default function KnowledgeAssistPage() {
   const [question, setQuestion] = useState(STARTERS[0].q);
@@ -40,6 +45,19 @@ export default function KnowledgeAssistPage() {
         title="Coaching Tips"
         subtitle="Stuck on a call? Ask what to say — Talksmith searches proven playbooks and gives you plain advice."
       />
+
+      {error && isCoachingOfflineError(error) ? (
+        <AlertBanner
+          variant="warning"
+          title="Coaching library unavailable"
+          message="The RAG coaching engine could not be reached. Open Settings to check connections or rebuild the index."
+        />
+      ) : null}
+      {error && isCoachingOfflineError(error) ? (
+        <p className="form-note">
+          <Link to="/integrations">Open Settings</Link> to check coaching / rebuild index.
+        </p>
+      ) : null}
 
       <div className="chip-row">
         {STARTERS.map((s) => (
@@ -78,7 +96,7 @@ export default function KnowledgeAssistPage() {
             <button type="submit" disabled={loading}>
               {loading ? "Finding advice…" : "Get coaching tips"}
             </button>
-            {error ? <p className="form-error">{error}</p> : null}
+            {error && !isCoachingOfflineError(error) ? <p className="form-error">{error}</p> : null}
           </form>
         </Card>
 

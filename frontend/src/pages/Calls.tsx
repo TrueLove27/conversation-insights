@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
+import { LoadingSkeleton } from "../components/ui";
+import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -14,44 +16,51 @@ function badgeClass(prefix: string, value: string): string {
 
 export default function CallsPage() {
   const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [data, setData] = useState<PaginatedCalls | null>(null);
   const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [agentId, setAgentId] = useState("");
   const [outcome, setOutcome] = useState<CallOutcome | "">("");
   const [sentiment, setSentiment] = useState<SentimentLabel | "">("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const loadCalls = () => {
-    setLoading(true);
-    api
-      .listCalls({
+  const { data, loading, error, setError, reload } = useAsyncLoad<PaginatedCalls>(
+    () =>
+      api.listCalls({
         search: search || undefined,
         agent_id: agentId || undefined,
         outcome: outcome || undefined,
         sentiment: sentiment || undefined,
         limit: 50,
-      })
-      .then((response) => {
-        setData(response);
-        if (response.items.length > 0) {
-          setSelectedCall((current) => current ?? response.items[0]);
-        } else {
-          setSelectedCall(null);
-        }
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
+      }),
+    [agentId, outcome, sentiment, search],
+  );
 
   useEffect(() => {
     api.listAgents().then(setAgents).catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    loadCalls();
-  }, [agentId, outcome, sentiment]);
+    if (!data) return;
+    if (data.items.length > 0) {
+      setSelectedCall((current) => {
+        if (current && data.items.some((item) => item.id === current.id)) return current;
+        return data.items[0];
+      });
+    } else {
+      setSelectedCall(null);
+    }
+  }, [data]);
+
+  const loadCalls = () => {
+    setError(null);
+    setSearch(searchInput);
+    if (searchInput === search) reload();
+  };
+
+  const agentName =
+    selectedCall != null
+      ? agents.find((agent) => agent.id === selectedCall.agent_id)?.name ?? selectedCall.agent_id
+      : "";
 
   return (
     <div className="page">
@@ -66,8 +75,8 @@ export default function CallsPage() {
         <input
           type="search"
           placeholder="Search by customer name or what was said…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
           onKeyDown={(event) => event.key === "Enter" && loadCalls()}
         />
         <select value={agentId} onChange={(event) => setAgentId(event.target.value)}>
@@ -98,8 +107,15 @@ export default function CallsPage() {
         </button>
       </section>
 
-      {error ? <div className="page-state error">{error}</div> : null}
-      {loading ? <div className="page-state">Loading calls...</div> : null}
+      {error ? (
+        <div className="page-state error retry-row">
+          <span>{error}</span>
+          <button type="button" onClick={loadCalls}>
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {loading ? <LoadingSkeleton rows={5} /> : null}
 
       {!loading && data ? (
         <section className="split-layout">
@@ -135,7 +151,7 @@ export default function CallsPage() {
                 <div className="detail-grid">
                   <div>
                     <span className="detail-label">Agent</span>
-                    <strong>{selectedCall.agent_id}</strong>
+                    <strong>{agentName}</strong>
                   </div>
                   <div>
                     <span className="detail-label">Duration</span>

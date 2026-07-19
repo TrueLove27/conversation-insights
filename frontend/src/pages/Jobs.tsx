@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { JobRecord, JobStatus, JobType } from "../types";
+import { LoadingSkeleton } from "../components/ui";
+import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 const JOB_TYPES: JobType[] = ["batch_analysis", "transcript_analysis", "agent_report", "keyword_extraction"];
 
@@ -9,30 +11,41 @@ function statusClass(status: JobStatus): string {
 }
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobStatus | "">("");
   const [newJobType, setNewJobType] = useState<JobType>("batch_analysis");
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const loadJobs = () => {
-    api
-      .listJobs(statusFilter || undefined)
-      .then((records) => {
-        setJobs(records);
-        setSelectedJob((current) => current ?? records[0] ?? null);
-      })
-      .catch((err: Error) => setError(err.message));
-  };
+  const { data: jobs, setData: setJobs, loading, error, setError, reload } = useAsyncLoad<JobRecord[]>(
+    () => api.listJobs(statusFilter || undefined),
+    [statusFilter],
+  );
 
   useEffect(() => {
-    loadJobs();
-    const timer = window.setInterval(loadJobs, 3000);
+    const timer = window.setInterval(() => {
+      api
+        .listJobs(statusFilter || undefined)
+        .then((records) => {
+          setJobs(records);
+          setError(null);
+        })
+        .catch(() => undefined);
+    }, 3000);
     return () => window.clearInterval(timer);
-  }, [statusFilter]);
+  }, [statusFilter, setJobs, setError]);
+
+  useEffect(() => {
+    if (!jobs) return;
+    setSelectedJob((current) => {
+      if (current && jobs.some((job) => job.id === current.id)) {
+        return jobs.find((job) => job.id === current.id) ?? current;
+      }
+      return jobs[0] ?? null;
+    });
+  }, [jobs]);
 
   const enqueueDemoJob = async () => {
-    setError(null);
+    setActionError(null);
     try {
       const payload =
         newJobType === "batch_analysis"
@@ -47,11 +60,13 @@ export default function JobsPage() {
               : { date_range: "2026-07-01/2026-07-11" };
 
       await api.createJob({ job_type: newJobType, payload });
-      loadJobs();
+      reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create job");
+      setActionError(err instanceof Error ? err.message : "Unable to create job");
     }
   };
+
+  const displayError = error || actionError;
 
   return (
     <div className="page">
@@ -76,7 +91,11 @@ export default function JobsPage() {
 
       <section className="filters panel">
         <label htmlFor="status-filter">Filter by status</label>
-        <select id="status-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as JobStatus | "")}>
+        <select
+          id="status-filter"
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value as JobStatus | "")}
+        >
           <option value="">All statuses</option>
           <option value="pending">Pending</option>
           <option value="running">Running</option>
@@ -85,13 +104,28 @@ export default function JobsPage() {
         </select>
       </section>
 
-      {error ? <div className="page-state error">{error}</div> : null}
+      {displayError ? (
+        <div className="page-state error retry-row">
+          <span>{displayError}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActionError(null);
+              reload();
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {loading && !jobs ? <LoadingSkeleton rows={4} /> : null}
 
       <section className="split-layout">
         <article className="panel list-panel">
-          <h3>Jobs ({jobs.length})</h3>
+          <h3>Jobs ({jobs?.length ?? 0})</h3>
           <ul className="job-list">
-            {jobs.map((job) => (
+            {(jobs ?? []).map((job) => (
               <li key={job.id}>
                 <button
                   type="button"
@@ -134,7 +168,9 @@ export default function JobsPage() {
                 </div>
                 <div>
                   <span className="detail-label">Completed</span>
-                  <strong>{selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : "—"}</strong>
+                  <strong>
+                    {selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : "—"}
+                  </strong>
                 </div>
               </div>
               <h4>Payload</h4>
