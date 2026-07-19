@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
-import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
+import type { AgentRecord, CallOutcome, CallRecord, SentimentLabel } from "../types";
+import { EmptyState, LoadingSkeleton, Button, Chip } from "../components/ui";
 import { AddCallForm } from "../components/AddCallForm";
-import { TranscriptView } from "../components/TranscriptView";
-import { useAsyncLoad } from "../hooks/useAsyncLoad";
+import { highlightText, TranscriptView } from "../components/TranscriptView";
+
+const PAGE_SIZE = 50;
+
+type RangePreset = "7d" | "30d" | "all";
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -17,10 +20,28 @@ function badgeClass(prefix: string, value: string): string {
   return `${prefix} ${prefix}-${value.replace("_", "-")}`;
 }
 
+function fromDateFor(preset: RangePreset): string | undefined {
+  if (preset === "all") return undefined;
+  const days = preset === "7d" ? 7 : 30;
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - days);
+  from.setUTCHours(0, 0, 0, 0);
+  return from.toISOString();
+}
+
+function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === "AbortError") ||
+    (err instanceof Error && err.name === "AbortError")
+  );
+}
+
 export default function CallsPage() {
   const { callId } = useParams<{ callId?: string }>();
   const navigate = useNavigate();
   const [agents, setAgents] = useState<AgentRecord[]>([]);
+  const [items, setItems] = useState<CallRecord[]>([]);
+  const [total, setTotal] = useState(0);
   const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
   const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
@@ -28,21 +49,55 @@ export default function CallsPage() {
   const [agentId, setAgentId] = useState("");
   const [outcome, setOutcome] = useState<CallOutcome | "">("");
   const [sentiment, setSentiment] = useState<SentimentLabel | "">("");
+  const [range, setRange] = useState<RangePreset>("all");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const listController = useRef<AbortController | null>(null);
 
-  const { data, loading, error, setError, reload } = useAsyncLoad<PaginatedCalls>(
-    (signal) =>
-      api.listCalls(
-        {
-          search: search || undefined,
-          agent_id: agentId || undefined,
-          outcome: outcome || undefined,
-          sentiment: sentiment || undefined,
-          limit: 50,
-        },
-        signal,
-      ),
-    [agentId, outcome, sentiment, search],
+  const fromDate = useMemo(() => fromDateFor(range), [range]);
+  const hasMore = items.length < total;
+
+  const fetchPage = useCallback(
+    async (offset: number, append: boolean) => {
+      listController.current?.abort();
+      const controller = new AbortController();
+      listController.current = controller;
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const page = await api.listCalls(
+          {
+            search: search || undefined,
+            agent_id: agentId || undefined,
+            outcome: outcome || undefined,
+            sentiment: sentiment || undefined,
+            from_date: fromDate,
+            limit: PAGE_SIZE,
+            offset,
+          },
+          controller.signal,
+        );
+        if (controller.signal.aborted) return;
+        setTotal(page.total);
+        setItems((prev) => (append ? [...prev, ...page.items] : page.items));
+      } catch (err: unknown) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        setError(err instanceof Error ? err.message : String(err));
+        if (!append) {
+          setItems([]);
+          setTotal(0);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [agentId, fromDate, outcome, search, sentiment],
   );
 
   useEffect(() => {
@@ -50,15 +105,20 @@ export default function CallsPage() {
   }, []);
 
   useEffect(() => {
-    if (!data) return;
+    void fetchPage(0, false);
+    return () => listController.current?.abort();
+  }, [fetchPage]);
+
+  useEffect(() => {
     setDeepLinkError(null);
 
     if (callId) {
-      const inList = data.items.find((item) => item.id === callId);
+      const inList = items.find((item) => item.id === callId);
       if (inList) {
         setSelectedCall(inList);
         return;
       }
+      if (loading) return;
       const controller = new AbortController();
       api
         .getCall(callId, controller.signal)
@@ -68,9 +128,9 @@ export default function CallsPage() {
         .catch((err: unknown) => {
           if (controller.signal.aborted) return;
           setDeepLinkError(err instanceof Error ? err.message : "Call not found");
-          if (data.items.length > 0) {
-            setSelectedCall(data.items[0]);
-            navigate(`/calls/${data.items[0].id}`, { replace: true });
+          if (items.length > 0) {
+            setSelectedCall(items[0]);
+            navigate(`/calls/${items[0].id}`, { replace: true });
           } else {
             setSelectedCall(null);
           }
@@ -78,13 +138,13 @@ export default function CallsPage() {
       return () => controller.abort();
     }
 
-    if (data.items.length > 0) {
-      setSelectedCall(data.items[0]);
-      navigate(`/calls/${data.items[0].id}`, { replace: true });
-    } else {
+    if (!loading && items.length > 0) {
+      setSelectedCall(items[0]);
+      navigate(`/calls/${items[0].id}`, { replace: true });
+    } else if (!loading && items.length === 0) {
       setSelectedCall(null);
     }
-  }, [data, callId, navigate]);
+  }, [items, callId, navigate, loading]);
 
   const selectCall = (call: CallRecord) => {
     setSelectedCall(call);
@@ -99,14 +159,18 @@ export default function CallsPage() {
     setAgentId("");
     setOutcome("");
     setSentiment("");
+    setRange("all");
     navigate(`/calls/${newCallId}`);
-    reload();
+    void fetchPage(0, false);
   };
 
-  const loadCalls = () => {
-    setError(null);
-    setSearch(searchInput);
-    if (searchInput === search) reload();
+  const applySearch = () => {
+    setSearch(searchInput.trim());
+  };
+
+  const loadMore = () => {
+    if (!hasMore || loadingMore) return;
+    void fetchPage(items.length, true);
   };
 
   const agentName =
@@ -136,13 +200,19 @@ export default function CallsPage() {
         />
       ) : null}
 
+      <div className="chip-row">
+        <Chip label="Last 7 days" active={range === "7d"} onClick={() => setRange("7d")} />
+        <Chip label="Last 30 days" active={range === "30d"} onClick={() => setRange("30d")} />
+        <Chip label="All time" active={range === "all"} onClick={() => setRange("all")} />
+      </div>
+
       <section className="filters panel">
         <input
           type="search"
           placeholder="Search by customer name or what was said…"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          onKeyDown={(event) => event.key === "Enter" && loadCalls()}
+          onKeyDown={(event) => event.key === "Enter" && applySearch()}
         />
         <select value={agentId} onChange={(event) => setAgentId(event.target.value)}>
           <option value="">All agents</option>
@@ -167,7 +237,7 @@ export default function CallsPage() {
           <option value="negative">Negative</option>
           <option value="mixed">Mixed</option>
         </select>
-        <Button type="button" onClick={loadCalls}>
+        <Button type="button" onClick={applySearch}>
           Apply
         </Button>
       </section>
@@ -175,7 +245,7 @@ export default function CallsPage() {
       {error ? (
         <div className="page-state error retry-row">
           <span>{error}</span>
-          <Button type="button" variant="glass" onClick={loadCalls}>
+          <Button type="button" variant="glass" onClick={() => void fetchPage(0, false)}>
             Retry
           </Button>
         </div>
@@ -183,34 +253,47 @@ export default function CallsPage() {
       {deepLinkError ? <div className="page-state error">{deepLinkError}</div> : null}
       {loading ? <LoadingSkeleton rows={5} /> : null}
 
-      {!loading && data ? (
+      {!loading ? (
         <section className="split-layout">
           <article className="panel list-panel">
             <div className="panel-heading">
-              <h3>Calls ({data.total})</h3>
+              <h3>
+                Showing {items.length} of {total}
+              </h3>
             </div>
-            {data.items.length === 0 ? (
+            {items.length === 0 ? (
               <EmptyState
                 title="No calls found"
-                message="Try clearing filters or load sample calls from Settings."
+                message="Try clearing filters, widening the date range, or load sample calls from Settings."
               />
             ) : (
-              <ul className="call-list">
-                {data.items.map((call) => (
-                  <li key={call.id}>
-                    <button
-                      type="button"
-                      className={selectedCall?.id === call.id ? "call-item active" : "call-item"}
-                      onClick={() => selectCall(call)}
-                    >
-                      <strong>{call.customer_name}</strong>
-                      <span>{new Date(call.started_at).toLocaleString()}</span>
-                      <span className={badgeClass("pill", call.sentiment)}>{call.sentiment}</span>
-                      <span className={badgeClass("pill", call.outcome)}>{call.outcome.replace("_", " ")}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="call-list">
+                  {items.map((call) => (
+                    <li key={call.id}>
+                      <button
+                        type="button"
+                        className={selectedCall?.id === call.id ? "call-item active" : "call-item"}
+                        onClick={() => selectCall(call)}
+                      >
+                        <strong>{highlightText(call.customer_name, search)}</strong>
+                        <span>{new Date(call.started_at).toLocaleString()}</span>
+                        <span className={badgeClass("pill", call.sentiment)}>{call.sentiment}</span>
+                        <span className={badgeClass("pill", call.outcome)}>
+                          {call.outcome.replace("_", " ")}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {hasMore ? (
+                  <div className="load-more-row">
+                    <Button type="button" variant="glass" onClick={loadMore} disabled={loadingMore}>
+                      {loadingMore ? "Loading…" : `Load more (${total - items.length} left)`}
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
           </article>
 
@@ -218,7 +301,7 @@ export default function CallsPage() {
             {selectedCall ? (
               <>
                 <div className="panel-heading">
-                  <h3>{selectedCall.customer_name}</h3>
+                  <h3>{highlightText(selectedCall.customer_name, search)}</h3>
                   <p>{selectedCall.id}</p>
                 </div>
                 <div className="detail-grid">
@@ -243,7 +326,7 @@ export default function CallsPage() {
                     <strong>{selectedCall.booking_intent ? "Yes" : "No"}</strong>
                   </div>
                 </div>
-                <p className="summary">{selectedCall.summary}</p>
+                <p className="summary">{highlightText(selectedCall.summary, search)}</p>
                 <h4>Keywords</h4>
                 <div className="tag-row">
                   {selectedCall.keywords.map((keyword) => (
@@ -253,7 +336,7 @@ export default function CallsPage() {
                   ))}
                 </div>
                 <h4>Transcript</h4>
-                <TranscriptView text={selectedCall.transcript} />
+                <TranscriptView text={selectedCall.transcript} highlight={search || undefined} />
               </>
             ) : (
               <EmptyState title="No call selected" message="No calls match the current filters." />

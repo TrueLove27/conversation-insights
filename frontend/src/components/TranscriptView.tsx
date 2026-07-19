@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type TranscriptRole = "agent" | "customer" | "unknown";
 
 export interface TranscriptTurn {
@@ -60,13 +62,36 @@ export function parseTranscript(raw: string): TranscriptTurn[] {
   return turns.length > 0 ? turns : [{ role: "unknown", label: "Transcript", text }];
 }
 
-export function TranscriptView({ text }: { text: string }) {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Highlight case-insensitive occurrences of query inside text. */
+export function highlightText(text: string, query?: string): ReactNode {
+  const needle = query?.trim();
+  if (!needle) return text;
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(needle)})`, "gi"));
+  if (parts.length === 1) return text;
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === needle.toLowerCase() ? (
+      <mark key={`${part}-${index}`} className="search-hit">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
+export function TranscriptView({ text, highlight }: { text: string; highlight?: string }) {
   const turns = parseTranscript(text);
 
   if (turns.length === 1 && turns[0].role === "unknown") {
     return (
       <div className="transcript-view transcript-fallback">
-        <p className="transcript-fallback-text">{turns[0].text}</p>
+        <p className="transcript-fallback-text">{highlightText(turns[0].text, highlight)}</p>
       </div>
     );
   }
@@ -79,7 +104,7 @@ export function TranscriptView({ text }: { text: string }) {
           className={`transcript-turn transcript-turn-${turn.role}`}
         >
           <span className="transcript-role">{turn.label}</span>
-          <div className="transcript-bubble">{turn.text}</div>
+          <div className="transcript-bubble">{highlightText(turn.text, highlight)}</div>
         </div>
       ))}
     </div>

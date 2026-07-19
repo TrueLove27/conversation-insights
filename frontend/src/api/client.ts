@@ -81,6 +81,8 @@ export const api = {
       outcome?: CallOutcome;
       sentiment?: SentimentLabel;
       search?: string;
+      from_date?: string;
+      to_date?: string;
       limit?: number;
       offset?: number;
     },
@@ -91,6 +93,8 @@ export const api = {
     if (params?.outcome) query.set("outcome", params.outcome);
     if (params?.sentiment) query.set("sentiment", params.sentiment);
     if (params?.search) query.set("search", params.search);
+    if (params?.from_date) query.set("from_date", params.from_date);
+    if (params?.to_date) query.set("to_date", params.to_date);
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.offset) query.set("offset", String(params.offset));
     const suffix = query.toString() ? `?${query.toString()}` : "";

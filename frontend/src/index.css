@@ -938,11 +938,17 @@ button.chip::before {
   border: 1px solid #1e293b;
 }
 
-.transcript-fallback-text {
-  margin: 0;
-  white-space: pre-wrap;
-  color: #cbd5e1;
-  line-height: 1.5;
+.search-hit {
+  background: rgba(245, 158, 11, 0.35);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 0.1em;
+}
+
+.load-more-row {
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: center;
 }
 
 .tag-row {
