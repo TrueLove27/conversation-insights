@@ -124,21 +124,77 @@ export default function AnalyzePage() {
                   </strong>
                 </div>
                 <div>
+                  <span className="detail-label">Mood score</span>
+                  <strong>{result.sentiment_score.toFixed(2)}</strong>
+                </div>
+                <div>
                   <span className="detail-label">Wanted to book?</span>
                   <strong>{result.booking_intent ? "Yes" : "No"}</strong>
                 </div>
                 <div>
-                  <span className="detail-label">Confidence</span>
+                  <span className="detail-label">Booking confidence</span>
                   <strong>{(result.booking_confidence * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="detail-label">Analysis</span>
-                  <strong>{result.analysis_source || "basic"}</strong>
                 </div>
               </div>
 
+              <h4>Mood breakdown</h4>
+              <div className="breakdown-bars">
+                {(
+                  [
+                    ["positive", "Happy", result.sentiment_breakdown.positive],
+                    ["neutral", "Neutral", result.sentiment_breakdown.neutral],
+                    ["negative", "Upset", result.sentiment_breakdown.negative],
+                  ] as const
+                ).map(([key, label, value]) => (
+                  <div key={key} className="bar-row">
+                    <div className="bar-row-meta">
+                      <span>{label}</span>
+                      <span>{Math.round(value * 100)}%</span>
+                    </div>
+                    <div className="bar-track">
+                      <div
+                        className={`bar-fill ${key}`}
+                        style={{ width: `${Math.max(2, Math.round(value * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {result.risk_flags.length > 0 ? (
+                <>
+                  <h4>Risk flags</h4>
+                  <ul className="risk-list">
+                    {result.risk_flags.map((flag) => (
+                      <li key={flag}>{flag}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <h4>Risk flags</h4>
+                  <p className="form-note">No major risk language detected.</p>
+                </>
+              )}
+
+              {result.keywords.length > 0 ? (
+                <>
+                  <h4>Keywords</h4>
+                  <div className="tag-row">
+                    {result.keywords.map((keyword) => (
+                      <span key={keyword.term} className="tag">
+                        {keyword.term}
+                        {keyword.category ? ` · ${keyword.category}` : ""} ({keyword.count})
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
               <h4>Summary</h4>
               <p className="summary">{result.summary}</p>
+
+              <p className="form-note">Analysis source: {result.analysis_source || "basic"}</p>
 
               {result.suggested_script ? (
                 <>

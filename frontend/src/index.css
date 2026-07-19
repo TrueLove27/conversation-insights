@@ -1014,6 +1014,14 @@ button.chip::before {
   gap: 0.55rem;
 }
 
+.bar-row-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
 .bar-track {
   height: 10px;
   background: #1e293b;
