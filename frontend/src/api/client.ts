@@ -189,6 +189,7 @@ export const api = {
   createJob: (payload: { job_type: JobType; payload?: Record<string, unknown> }) =>
     request<JobRecord>("/jobs", {
       method: "POST",
+      headers: adminHeaders(),
       body: JSON.stringify(payload),
     }),
 

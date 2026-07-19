@@ -57,12 +57,17 @@ export default function JobsPage() {
                   transcript:
                     "Customer: Please schedule a follow-up for tomorrow. Agent: Confirmed for 11 AM. Customer: Thank you!",
                 }
-              : { date_range: "2026-07-01/2026-07-11" };
+              : { call_ids: ["call-1001", "call-1002", "call-1003"] };
 
       await api.createJob({ job_type: newJobType, payload });
       reload();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Unable to create job");
+      const message = err instanceof Error ? err.message : "Unable to create job";
+      setActionError(
+        /401|Unauthorized/i.test(message)
+          ? "Unauthorized. Save a valid API key in Settings, then try again."
+          : message,
+      );
     }
   };
 
@@ -73,7 +78,10 @@ export default function JobsPage() {
       <header className="page-header">
         <div>
           <h2>Background Job Queue</h2>
-          <p>Simulated async workers for batch analysis and report generation.</p>
+          <p>
+            Run batch analysis, keyword extraction, and agent reports against live call data. Creating a job
+            requires the admin API key saved in Settings.
+          </p>
         </div>
         <div className="header-actions">
           <select value={newJobType} onChange={(event) => setNewJobType(event.target.value as JobType)}>

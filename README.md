@@ -20,7 +20,7 @@
 - **SQLite database** with WAL mode, seed migration from JSON fixtures
 - **Rate limiting** on analyze, ingest, and knowledge endpoints (slowapi)
 - Integrations dashboard for pipeline status; Settings UI stores admin API key
-- Simulated async job queue with progress tracking (Background Jobs nav)
+- Background job queue runs real batch/keyword/agent analysis (Background Jobs nav; `POST /jobs` requires API key)
 
 ## Stack
 
@@ -60,7 +60,7 @@ Frontend dev server: http://localhost:5173
 |----------|-------------|
 | `DATABASE_PATH` | SQLite file path (default: `data/conversation_insights.db`) |
 | `INGEST_API_KEY` | Key for ingest + admin knowledge ops (`X-API-Key` header) |
-| `WEBHOOK_SECRET` | Optional secret for webhook ingest |
+| `WEBHOOK_SECRET` | Required for `POST /ingest/webhook` (requests rejected if unset) |
 | `GROQ_API_KEY` | Optional — enables LLM transcript analysis |
 | `ENABLE_LLM_ANALYSIS` | `true`/`false` — use Groq when key is set |
 | `RAG_SERVICE_URL` | rag-service base URL (default `http://localhost:8002`) |
@@ -78,13 +78,13 @@ Frontend dev server: http://localhost:5173
 | `GET /api/v1/analytics/dashboard` | Dashboard metrics (optional `from_date` / `to_date`; SQL aggregates) |
 | `POST /api/v1/analyze` | Analyze a transcript (rate limited) |
 | `POST /api/v1/ingest/call` | Ingest call via API key |
-| `POST /api/v1/ingest/webhook` | Webhook ingest (optional secret) |
+| `POST /api/v1/ingest/webhook` | Webhook ingest (requires configured `WEBHOOK_SECRET`) |
 | `GET /api/v1/ingest/events` | Recent ingestion audit log (API key) |
 | `POST /api/v1/knowledge/sync-rag` | Rebuild coaching index (API key) |
 | `POST /api/v1/knowledge/import-corpus` | Import sample calls (API key) |
 | `GET /api/v1/integrations/status` | Groq, webhook, RAG, corpus, DB status |
 | `GET /api/v1/jobs` | Background job status |
-| `POST /api/v1/jobs` | Enqueue a job |
+| `POST /api/v1/jobs` | Enqueue a job (API key; real batch/keyword/agent handlers) |
 
 ## Architecture
 

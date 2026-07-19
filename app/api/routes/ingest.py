@@ -44,7 +44,9 @@ async def webhook_ingest(
     x_webhook_secret: str | None = Header(default=None),
 ) -> IngestionResult:
     settings = get_settings()
-    if settings.webhook_secret and x_webhook_secret != settings.webhook_secret:
+    if not settings.webhook_secret:
+        raise HTTPException(status_code=401, detail="Webhook secret not configured")
+    if x_webhook_secret != settings.webhook_secret:
         raise HTTPException(status_code=401, detail="Invalid webhook secret")
     result = service.ingest(body, source="webhook")
     if not result.success:

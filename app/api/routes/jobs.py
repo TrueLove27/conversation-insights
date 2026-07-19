@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.core.auth import verify_api_key
 from app.models.schemas import JobCreateRequest, JobRecord, JobStatus
 from app.services.job_service import JobService
 
@@ -21,5 +22,8 @@ def get_job(job_id: str) -> JobRecord:
 
 
 @router.post("", response_model=JobRecord, status_code=201)
-def create_job(request: JobCreateRequest) -> JobRecord:
+async def create_job(
+    request: JobCreateRequest,
+    _: None = Depends(verify_api_key),
+) -> JobRecord:
     return service.enqueue(request)

@@ -11,6 +11,7 @@ TEST_DB = TEST_DIR / "pytest.db"
 os.environ["DATABASE_PATH"] = str(TEST_DB)
 os.environ["INGEST_API_KEY"] = "test-ingest-key"
 os.environ["ENABLE_LLM_ANALYSIS"] = "false"
+os.environ["WEBHOOK_SECRET"] = ""
 
 from app.core.config import get_settings
 

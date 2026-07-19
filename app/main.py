@@ -27,6 +27,10 @@ def create_app() -> FastAPI:
         db = get_database()
         db.init_schema()
         db.seed_from_json_if_empty()
+        if settings.ingest_api_key == "dev-ingest-key-change-me":
+            logger.warning(
+                "INGEST_API_KEY is still the default dev key — change it before any shared deployment"
+            )
         logger.info("Talksmith API started version=%s", settings.app_version)
         yield
         await get_rag_client().aclose()
