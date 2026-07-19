@@ -1,5 +1,5 @@
-import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { RagQueryResponse } from "../types";
 import { AlertBanner, Card, Chip, EmptyState, PageHeader, SourceCard, Button, CopyButton } from "../components/ui";
@@ -18,19 +18,21 @@ function isCoachingOfflineError(message: string): boolean {
 }
 
 export default function KnowledgeAssistPage() {
-  const [question, setQuestion] = useState(STARTERS[0].q);
+  const [searchParams] = useSearchParams();
+  const initialQ = searchParams.get("q")?.trim() || STARTERS[0].q;
+  const [question, setQuestion] = useState(initialQ);
   const [category, setCategory] = useState<string | undefined>();
   const [guidesOnly, setGuidesOnly] = useState(false);
   const [result, setResult] = useState<RagQueryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoAsked = useRef(false);
 
-  const handleAsk = async (event: FormEvent) => {
-    event.preventDefault();
+  const ask = async (nextQuestion: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.askPlaybook(question, 5, guidesOnly, category);
+      const response = await api.askPlaybook(nextQuestion, 5, guidesOnly, category);
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not get coaching tips");
@@ -39,12 +41,37 @@ export default function KnowledgeAssistPage() {
     }
   };
 
+  useEffect(() => {
+    const fromCall = searchParams.get("q")?.trim();
+    if (!fromCall) return;
+    setQuestion(fromCall);
+    if (autoAsked.current) return;
+    autoAsked.current = true;
+    void ask(fromCall);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleAsk = async (event: FormEvent) => {
+    event.preventDefault();
+    await ask(question);
+  };
+
   return (
     <div className="page">
       <PageHeader
         title="Coaching Tips"
         subtitle="Stuck on a call? Ask what to say — Talksmith searches proven playbooks and gives you plain advice."
       />
+
+      {searchParams.get("from") ? (
+        <p className="form-note">
+          Pre-filled from call{" "}
+          <Link className="inline-link" to={`/calls/${searchParams.get("from")}`}>
+            {searchParams.get("from")}
+          </Link>
+          . Edit the question below or wait for tips to load.
+        </p>
+      ) : null}
 
       {error && isCoachingOfflineError(error) ? (
         <AlertBanner

@@ -1006,7 +1006,32 @@ button.chip::before {
 
 .button-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  align-items: center;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(135deg, var(--accent) 0%, #d97706 55%, #b45309 100%);
+  color: #0a0f1a;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.2),
+    0 8px 24px rgba(245, 158, 11, 0.22);
+}
+
+.button-link:hover {
+  filter: brightness(1.05);
+}
+
+.call-coach-actions {
+  margin: 0.35rem 0 1rem;
 }
 
 .form-error {

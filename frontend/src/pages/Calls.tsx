@@ -29,6 +29,26 @@ function fromDateFor(preset: RangePreset): string | undefined {
   return from.toISOString();
 }
 
+function coachingQuestionForCall(call: CallRecord): string {
+  const mood =
+    call.sentiment === "positive"
+      ? "happy"
+      : call.sentiment === "negative"
+        ? "upset"
+        : call.sentiment === "mixed"
+          ? "mixed"
+          : "neutral";
+  const outcome = call.outcome.replace("_", " ");
+  const summary = call.summary?.trim();
+  if (summary) {
+    return `This call ended as ${outcome} with ${mood} customer mood. Summary: ${summary} What should the agent say or do next?`;
+  }
+  const snippet = call.transcript.replace(/\s+/g, " ").trim().slice(0, 280);
+  return `Help coach this call (outcome: ${outcome}, mood: ${mood}). Transcript excerpt: ${snippet}${
+    call.transcript.length > 280 ? "…" : ""
+  } What should the agent say or do differently?`;
+}
+
 function isAbortError(err: unknown): boolean {
   return (
     (err instanceof DOMException && err.name === "AbortError") ||
@@ -303,6 +323,14 @@ export default function CallsPage() {
                 <div className="panel-heading">
                   <h3>{highlightText(selectedCall.customer_name, search)}</h3>
                   <p>{selectedCall.id}</p>
+                </div>
+                <div className="button-row call-coach-actions">
+                  <Link
+                    className="button-link"
+                    to={`/knowledge?q=${encodeURIComponent(coachingQuestionForCall(selectedCall))}&from=${encodeURIComponent(selectedCall.id)}`}
+                  >
+                    Get coaching tips
+                  </Link>
                 </div>
                 <div className="detail-grid">
                   <div>
