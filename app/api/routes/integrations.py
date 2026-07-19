@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 from app.clients.rag_client import get_rag_client
 from app.core.config import get_settings
-from app.core.limiter import limiter
 from app.db.store import get_database
-from app.models.schemas import AnalyzeRequest, AnalyzeResponse, IntegrationStatusResponse
+from app.models.schemas import IntegrationStatusResponse
 from app.services.corpus_sync_service import CorpusSyncService
 from app.services.llm_client import groq_status
 
@@ -41,11 +40,3 @@ async def integration_status() -> IntegrationStatusResponse:
         rag_service=rag_status,
         corpus_service=corpus_status,
     )
-
-
-@router.post("/analyze", response_model=AnalyzeResponse)
-@limiter.limit("20/minute")
-async def analyze_with_integration(request: Request, body: AnalyzeRequest) -> AnalyzeResponse:
-    from app.services.analyze_orchestrator import run_analysis
-
-    return await run_analysis(body)

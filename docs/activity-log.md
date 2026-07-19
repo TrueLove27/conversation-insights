@@ -12,3 +12,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Plan 4 SQL analytics: dashboard aggregations in SQLite, outcome/sentiment indexes, from_date/to_date filters, Overview 7d/30d/All presets
 - **2026-07-19** - Plan 5 real jobs: batch/keyword/agent_report use live data; POST /jobs requires API key; webhook fail-closed without secret; default key startup warning
 - **2026-07-19** - Plan 6 rule engine + CI: word-boundary phrase hits, tighter booking intent, prefix keyword categories, golden analysis tests, ruff/mypy in backend CI
+- **2026-07-19** - Plan 7 async cleanup: AbortController in useAsyncLoad, lean CallSummary agent metrics, typed knowledge responses, remove dead list_calls/integrations analyze, IngestionEvent type sync

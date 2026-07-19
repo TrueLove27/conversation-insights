@@ -47,9 +47,10 @@ function adminHeaders(): Record<string, string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { headers: initHeaders, ...rest } = init ?? {};
   const response = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    ...init,
+    ...rest,
+    headers: { "Content-Type": "application/json", ...(initHeaders ?? {}) },
   });
 
   if (!response.ok) {
@@ -64,24 +65,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  health: () => request<HealthResponse>("/health"),
+  health: (signal?: AbortSignal) => request<HealthResponse>("/health", { signal }),
 
-  getDashboard: (params?: { from_date?: string; to_date?: string }) => {
+  getDashboard: (params?: { from_date?: string; to_date?: string }, signal?: AbortSignal) => {
     const query = new URLSearchParams();
     if (params?.from_date) query.set("from_date", params.from_date);
     if (params?.to_date) query.set("to_date", params.to_date);
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<DashboardMetrics>(`/analytics/dashboard${suffix}`);
+    return request<DashboardMetrics>(`/analytics/dashboard${suffix}`, { signal });
   },
 
-  listCalls: (params?: {
-    agent_id?: string;
-    outcome?: CallOutcome;
-    sentiment?: SentimentLabel;
-    search?: string;
-    limit?: number;
-    offset?: number;
-  }) => {
+  listCalls: (
+    params?: {
+      agent_id?: string;
+      outcome?: CallOutcome;
+      sentiment?: SentimentLabel;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    },
+    signal?: AbortSignal,
+  ) => {
     const query = new URLSearchParams();
     if (params?.agent_id) query.set("agent_id", params.agent_id);
     if (params?.outcome) query.set("outcome", params.outcome);
@@ -90,16 +94,19 @@ export const api = {
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.offset) query.set("offset", String(params.offset));
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<PaginatedCalls>(`/calls${suffix}`);
+    return request<PaginatedCalls>(`/calls${suffix}`, { signal });
   },
 
-  getCall: (callId: string) => request<CallRecord>(`/calls/${callId}`),
+  getCall: (callId: string, signal?: AbortSignal) =>
+    request<CallRecord>(`/calls/${callId}`, { signal }),
 
-  listAgents: () => request<AgentRecord[]>("/agents"),
+  listAgents: (signal?: AbortSignal) => request<AgentRecord[]>("/agents", { signal }),
 
-  getAgent: (agentId: string) => request<AgentRecord>(`/agents/${agentId}`),
+  getAgent: (agentId: string, signal?: AbortSignal) =>
+    request<AgentRecord>(`/agents/${agentId}`, { signal }),
 
-  getAgentMetrics: (agentId: string) => request<AgentMetrics>(`/analytics/agents/${agentId}`),
+  getAgentMetrics: (agentId: string, signal?: AbortSignal) =>
+    request<AgentMetrics>(`/analytics/agents/${agentId}`, { signal }),
 
   analyzeTranscript: (payload: {
     transcript: string;
@@ -143,10 +150,16 @@ export const api = {
       { method: "POST", body: JSON.stringify({ transcript, industry }) },
     ),
 
-  preCallBrief: (agent_id: string, industry?: string, specialties?: string[]) =>
+  preCallBrief: (
+    agent_id: string,
+    industry?: string,
+    specialties?: string[],
+    signal?: AbortSignal,
+  ) =>
     request<PreCallBrief>("/knowledge/pre-call-brief", {
       method: "POST",
       body: JSON.stringify({ agent_id, industry, specialties }),
+      signal,
     }),
 
   topicInsights: (industry?: string) => {
@@ -154,10 +167,11 @@ export const api = {
     return request<TopicsResponse>(`/knowledge/topics${suffix}`);
   },
 
-  agentDigest: (agent_id: string, industry?: string) =>
+  agentDigest: (agent_id: string, industry?: string, signal?: AbortSignal) =>
     request<AgentDigest>("/knowledge/agent-digest", {
       method: "POST",
       body: JSON.stringify({ agent_id, industry }),
+      signal,
     }),
 
   syncRag: () =>
@@ -179,12 +193,13 @@ export const api = {
     );
   },
 
-  listJobs: (status?: JobStatus) => {
+  listJobs: (status?: JobStatus, signal?: AbortSignal) => {
     const suffix = status ? `?status=${status}` : "";
-    return request<JobRecord[]>(`/jobs${suffix}`);
+    return request<JobRecord[]>(`/jobs${suffix}`, { signal });
   },
 
-  getJob: (jobId: string) => request<JobRecord>(`/jobs/${jobId}`),
+  getJob: (jobId: string, signal?: AbortSignal) =>
+    request<JobRecord>(`/jobs/${jobId}`, { signal }),
 
   createJob: (payload: { job_type: JobType; payload?: Record<string, unknown> }) =>
     request<JobRecord>("/jobs", {
@@ -193,20 +208,25 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  getIntegrationStatus: () => request<IntegrationStatus>("/integrations/status"),
+  getIntegrationStatus: (signal?: AbortSignal) =>
+    request<IntegrationStatus>("/integrations/status", { signal }),
 
-  listIngestionEvents: (limit = 30) =>
+  listIngestionEvents: (limit = 30, signal?: AbortSignal) =>
     request<IngestionEvent[]>(`/ingest/events?limit=${limit}`, {
       headers: adminHeaders(),
+      signal,
     }),
 
-  ingestCall: (payload: {
-    transcript: string;
-    agent_id: string;
-    customer_name: string;
-    phone_number?: string;
-    external_id?: string;
-  }, apiKey: string) =>
+  ingestCall: (
+    payload: {
+      transcript: string;
+      agent_id: string;
+      customer_name: string;
+      phone_number?: string;
+      external_id?: string;
+    },
+    apiKey: string,
+  ) =>
     request<IngestionResult>("/ingest/call", {
       method: "POST",
       headers: { "X-API-Key": apiKey },

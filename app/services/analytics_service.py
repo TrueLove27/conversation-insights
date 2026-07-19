@@ -1,10 +1,9 @@
 from collections import Counter
 from datetime import datetime
 
-from app.models.schemas import AgentMetrics, AgentRecord, CallRecord, DashboardMetrics, KeywordHit
+from app.models.schemas import AgentMetrics, AgentRecord, CallSummary, DashboardMetrics, KeywordHit
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.call_repository import CallRepository
-from app.services.call_service import CallService
 
 
 class AnalyticsService:
@@ -12,11 +11,9 @@ class AnalyticsService:
         self,
         call_repository: CallRepository | None = None,
         agent_repository: AgentRepository | None = None,
-        call_service: CallService | None = None,
     ):
         self._calls = call_repository or CallRepository()
         self._agents = agent_repository or AgentRepository()
-        self._call_service = call_service or CallService(self._calls, self._agents)
 
     def get_dashboard_metrics(
         self,
@@ -41,7 +38,7 @@ class AnalyticsService:
         if not agent:
             return None
 
-        recent_calls = self._call_service.get_calls_for_agent(agent_id, limit=10)
+        recent_calls = self._calls.list_summaries_for_agent(agent_id, limit=10)
         sentiment_trend = self._build_sentiment_trend(recent_calls)
         outcome_breakdown = Counter(call.outcome.value for call in recent_calls)
 
@@ -58,7 +55,7 @@ class AnalyticsService:
     def get_agent(self, agent_id: str) -> AgentRecord | None:
         return self._agents.find_by_id(agent_id)
 
-    def _build_sentiment_trend(self, calls: list[CallRecord]) -> list[dict]:
+    def _build_sentiment_trend(self, calls: list[CallSummary]) -> list[dict]:
         ordered = sorted(calls, key=lambda call: call.started_at)
         return [
             {

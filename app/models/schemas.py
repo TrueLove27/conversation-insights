@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SentimentLabel(str, Enum):
@@ -61,6 +61,19 @@ class CallRecord(BaseModel):
     keywords: list[KeywordHit]
     summary: str
     language: str = "en"
+
+
+class CallSummary(BaseModel):
+    """Lean call row for agent metrics — no transcript/keywords/summary."""
+
+    id: str
+    agent_id: str
+    customer_name: str
+    started_at: datetime
+    duration_seconds: int
+    outcome: CallOutcome
+    sentiment: SentimentLabel
+    sentiment_score: float = Field(ge=-1, le=1)
 
 
 class AgentRecord(BaseModel):
@@ -122,7 +135,7 @@ class DashboardMetrics(BaseModel):
 
 class AgentMetrics(BaseModel):
     agent: AgentRecord
-    recent_calls: list[CallRecord]
+    recent_calls: list[CallSummary]
     sentiment_trend: list[dict[str, Any]]
     outcome_breakdown: dict[str, int]
 
@@ -253,3 +266,99 @@ class IntegrationStatusResponse(BaseModel):
     ingest_api_key_configured: bool
     rag_service: dict[str, Any] = Field(default_factory=dict)
     corpus_service: dict[str, Any] = Field(default_factory=dict)
+
+
+# --- Knowledge / RAG response models (extra keys from rag-service ignored) ---
+
+
+class RagSource(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    chunk_id: str = ""
+    document_id: str = ""
+    document_name: str = ""
+    text: str = ""
+    score: float = 0.0
+    chunk_index: int = 0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class RagQueryResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    question: str = ""
+    answer: str = ""
+    sources: list[RagSource] = Field(default_factory=list)
+    retrieval_time_ms: float = 0.0
+    total_time_ms: float = 0.0
+    generator: str = ""
+
+
+class ComplianceScanResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    risk_level: str = ""
+    flags: list[str] = Field(default_factory=list)
+    matched_keywords: list[str] = Field(default_factory=list)
+    escalation_required: bool = False
+    recommendation: str = ""
+
+
+class SuggestScriptResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    suggested_script: str = ""
+    sources: list[RagSource] = Field(default_factory=list)
+    generator: str = ""
+
+
+class PreCallBriefResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    agent_id: str = ""
+    industry: str | None = None
+    summary: str = ""
+    tips: list[str] = Field(default_factory=list)
+    playbooks: list[RagSource] = Field(default_factory=list)
+
+
+class TopicInsight(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    topic: str = ""
+    count: int = 0
+    sample_text: str = ""
+
+
+class TopicsResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    industry: str | None = None
+    topics: list[TopicInsight] = Field(default_factory=list)
+
+
+class AgentDigestResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    agent_id: str = ""
+    summary: str = ""
+    focus_areas: list[str] = Field(default_factory=list)
+    recommended_playbooks: list[RagSource] = Field(default_factory=list)
+
+
+class RagSyncResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    success: bool = True
+    message: str = ""
+
+
+class ImportCorpusResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    imported: int = 0
+    skipped: int = 0
+    agents_imported: int = 0
+    available: int = 0
+    industry: str | None = None
+    rag_sync_scheduled: bool = False

@@ -2,18 +2,24 @@ from datetime import datetime
 from typing import Any
 
 from app.db.store import Database, get_database
-from app.models.schemas import CallFilterParams, CallRecord, JobCreateRequest, JobRecord
+from app.models.schemas import (
+    CallFilterParams,
+    CallRecord,
+    CallSummary,
+    JobCreateRequest,
+    JobRecord,
+)
 
 
 class CallRepository:
     def __init__(self, db: Database | None = None):
         self._db = db or get_database()
 
-    def find_all(self) -> list[CallRecord]:
-        return self._db.list_calls()
-
     def find_filtered(self, filters: CallFilterParams) -> tuple[list[CallRecord], int]:
         return self._db.list_calls_filtered(filters)
+
+    def list_summaries_for_agent(self, agent_id: str, *, limit: int = 10) -> list[CallSummary]:
+        return self._db.list_call_summaries_for_agent(agent_id, limit=limit)
 
     def dashboard_metrics(
         self,
@@ -27,9 +33,6 @@ class CallRepository:
 
     def insert(self, call: CallRecord, source: str = "api") -> CallRecord:
         return self._db.insert_call(call, source=source)
-
-    def count(self) -> int:
-        return self._db.stats()["calls"]
 
     def file_exists(self) -> bool:
         return self._db.stats()["calls"] > 0

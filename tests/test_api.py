@@ -197,7 +197,7 @@ def test_knowledge_ask_validation(client):
     assert response.status_code == 422
 
 
-def test_integrations_analyze_shares_rag_path(client, monkeypatch):
+def test_analyze_shares_rag_path(client, monkeypatch):
     from app.clients.rag_client import RagClient
 
     monkeypatch.setattr(RagClient, "context_for_analysis", _raise_rag_down)
@@ -205,7 +205,7 @@ def test_integrations_analyze_shares_rag_path(client, monkeypatch):
     monkeypatch.setattr(RagClient, "suggest_script", _raise_rag_down)
 
     response = client.post(
-        "/api/v1/integrations/analyze",
+        "/api/v1/analyze",
         json={
             "transcript": "Agent: Thanks for calling today. Customer: I want to book a demo for Tuesday afternoon.",
             "agent_id": "agent-001",

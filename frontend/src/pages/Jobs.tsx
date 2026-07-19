@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { JobRecord, JobStatus, JobType } from "../types";
-import { LoadingSkeleton } from "../components/ui";
+import { EmptyState, LoadingSkeleton } from "../components/ui";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 const JOB_TYPES: JobType[] = ["batch_analysis", "transcript_analysis", "agent_report", "keyword_extraction"];
@@ -17,21 +17,26 @@ export default function JobsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: jobs, setData: setJobs, loading, error, setError, reload } = useAsyncLoad<JobRecord[]>(
-    () => api.listJobs(statusFilter || undefined),
+    (signal) => api.listJobs(statusFilter || undefined, signal),
     [statusFilter],
   );
 
   useEffect(() => {
+    const controller = new AbortController();
     const timer = window.setInterval(() => {
       api
-        .listJobs(statusFilter || undefined)
+        .listJobs(statusFilter || undefined, controller.signal)
         .then((records) => {
+          if (controller.signal.aborted) return;
           setJobs(records);
           setError(null);
         })
         .catch(() => undefined);
     }, 3000);
-    return () => window.clearInterval(timer);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
   }, [statusFilter, setJobs, setError]);
 
   useEffect(() => {
@@ -132,26 +137,30 @@ export default function JobsPage() {
       <section className="split-layout">
         <article className="panel list-panel">
           <h3>Jobs ({jobs?.length ?? 0})</h3>
-          <ul className="job-list">
-            {(jobs ?? []).map((job) => (
-              <li key={job.id}>
-                <button
-                  type="button"
-                  className={selectedJob?.id === job.id ? "job-item active" : "job-item"}
-                  onClick={() => setSelectedJob(job)}
-                >
-                  <div>
-                    <strong>{job.job_type}</strong>
-                    <span>{job.id}</span>
-                  </div>
-                  <span className={statusClass(job.status)}>{job.status}</span>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${job.progress}%` }} />
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {(jobs ?? []).length === 0 ? (
+            <EmptyState title="No jobs in queue" message="Enqueue a job above to run batch analysis or reports." />
+          ) : (
+            <ul className="job-list">
+              {(jobs ?? []).map((job) => (
+                <li key={job.id}>
+                  <button
+                    type="button"
+                    className={selectedJob?.id === job.id ? "job-item active" : "job-item"}
+                    onClick={() => setSelectedJob(job)}
+                  >
+                    <div>
+                      <strong>{job.job_type}</strong>
+                      <span>{job.id}</span>
+                    </div>
+                    <span className={statusClass(job.status)}>{job.status}</span>
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: `${job.progress}%` }} />
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
 
         <article className="panel detail-panel">
@@ -190,7 +199,7 @@ export default function JobsPage() {
               {selectedJob.error ? <p className="form-error">{selectedJob.error}</p> : null}
             </>
           ) : (
-            <div className="page-state">No jobs in queue.</div>
+            <EmptyState title="No job selected" message="Enqueue a job or select one from the list." />
           )}
         </article>
       </section>

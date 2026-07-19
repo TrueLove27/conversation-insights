@@ -26,6 +26,17 @@ export interface CallRecord {
   language: string;
 }
 
+export interface CallSummary {
+  id: string;
+  agent_id: string;
+  customer_name: string;
+  started_at: string;
+  duration_seconds: number;
+  outcome: CallOutcome;
+  sentiment: SentimentLabel;
+  sentiment_score: number;
+}
+
 export interface PaginatedCalls {
   items: CallRecord[];
   total: number;
@@ -68,7 +79,7 @@ export interface DashboardMetrics {
 
 export interface AgentMetrics {
   agent: AgentRecord;
-  recent_calls: CallRecord[];
+  recent_calls: CallSummary[];
   sentiment_trend: Array<{ timestamp: string; sentiment_score: number; label: string }>;
   outcome_breakdown: Record<string, number>;
 }
@@ -195,10 +206,12 @@ export interface IntegrationStatus {
 export interface IngestionEvent {
   id: string;
   source: string;
-  status: string;
+  external_id: string | null;
+  status: "success" | "failed";
   call_id: string | null;
-  created_at: string;
+  payload: string | null;
   error: string | null;
+  created_at: string;
 }
 
 export interface IngestionResult {

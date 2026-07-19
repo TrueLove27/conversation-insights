@@ -18,6 +18,7 @@ from app.models.schemas import (
     CallFilterParams,
     CallOutcome,
     CallRecord,
+    CallSummary,
     JobCreateRequest,
     JobRecord,
     JobStatus,
@@ -181,10 +182,21 @@ class Database:
             self._insert_agent(conn, agent)
 
     # --- Calls ---
-    def list_calls(self) -> list[CallRecord]:
+    def list_call_summaries_for_agent(self, agent_id: str, *, limit: int = 10) -> list[CallSummary]:
+        """Recent calls for an agent without loading transcript/keywords/summary."""
         with self.connection() as conn:
-            rows = conn.execute("SELECT * FROM calls ORDER BY started_at DESC").fetchall()
-            return [self._row_to_call(r) for r in rows]
+            rows = conn.execute(
+                """
+                SELECT id, agent_id, customer_name, started_at, duration_seconds,
+                       outcome, sentiment, sentiment_score
+                FROM calls
+                WHERE agent_id = ?
+                ORDER BY started_at DESC
+                LIMIT ?
+                """,
+                (agent_id, limit),
+            ).fetchall()
+            return [self._row_to_call_summary(r) for r in rows]
 
     def list_calls_filtered(self, filters: CallFilterParams) -> tuple[list[CallRecord], int]:
         """Filter and paginate calls in SQL. Returns (items, total)."""
@@ -557,6 +569,19 @@ class Database:
             booking_rate=row["booking_rate"],
             avg_handle_time_seconds=row["avg_handle_time_seconds"],
             specialties=json.loads(row["specialties"] or "[]"),
+        )
+
+    @staticmethod
+    def _row_to_call_summary(row: sqlite3.Row) -> CallSummary:
+        return CallSummary(
+            id=row["id"],
+            agent_id=row["agent_id"],
+            customer_name=row["customer_name"],
+            started_at=datetime.fromisoformat(row["started_at"]),
+            duration_seconds=row["duration_seconds"],
+            outcome=CallOutcome(row["outcome"]),
+            sentiment=SentimentLabel(row["sentiment"]),
+            sentiment_score=row["sentiment_score"],
         )
 
     @staticmethod

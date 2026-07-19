@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AgentRecord, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel } from "../types";
-import { LoadingSkeleton } from "../components/ui";
+import { EmptyState, LoadingSkeleton } from "../components/ui";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 function formatDuration(seconds: number): string {
@@ -24,14 +24,17 @@ export default function CallsPage() {
   const [sentiment, setSentiment] = useState<SentimentLabel | "">("");
 
   const { data, loading, error, setError, reload } = useAsyncLoad<PaginatedCalls>(
-    () =>
-      api.listCalls({
-        search: search || undefined,
-        agent_id: agentId || undefined,
-        outcome: outcome || undefined,
-        sentiment: sentiment || undefined,
-        limit: 50,
-      }),
+    (signal) =>
+      api.listCalls(
+        {
+          search: search || undefined,
+          agent_id: agentId || undefined,
+          outcome: outcome || undefined,
+          sentiment: sentiment || undefined,
+          limit: 50,
+        },
+        signal,
+      ),
     [agentId, outcome, sentiment, search],
   );
 
@@ -123,22 +126,29 @@ export default function CallsPage() {
             <div className="panel-heading">
               <h3>Calls ({data.total})</h3>
             </div>
-            <ul className="call-list">
-              {data.items.map((call) => (
-                <li key={call.id}>
-                  <button
-                    type="button"
-                    className={selectedCall?.id === call.id ? "call-item active" : "call-item"}
-                    onClick={() => setSelectedCall(call)}
-                  >
-                    <strong>{call.customer_name}</strong>
-                    <span>{new Date(call.started_at).toLocaleString()}</span>
-                    <span className={badgeClass("pill", call.sentiment)}>{call.sentiment}</span>
-                    <span className={badgeClass("pill", call.outcome)}>{call.outcome.replace("_", " ")}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {data.items.length === 0 ? (
+              <EmptyState
+                title="No calls found"
+                message="Try clearing filters or load sample calls from Settings."
+              />
+            ) : (
+              <ul className="call-list">
+                {data.items.map((call) => (
+                  <li key={call.id}>
+                    <button
+                      type="button"
+                      className={selectedCall?.id === call.id ? "call-item active" : "call-item"}
+                      onClick={() => setSelectedCall(call)}
+                    >
+                      <strong>{call.customer_name}</strong>
+                      <span>{new Date(call.started_at).toLocaleString()}</span>
+                      <span className={badgeClass("pill", call.sentiment)}>{call.sentiment}</span>
+                      <span className={badgeClass("pill", call.outcome)}>{call.outcome.replace("_", " ")}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </article>
 
           <article className="panel detail-panel">
@@ -179,7 +189,7 @@ export default function CallsPage() {
                 <pre className="transcript">{selectedCall.transcript}</pre>
               </>
             ) : (
-              <div className="page-state">No calls match the current filters.</div>
+              <EmptyState title="No call selected" message="No calls match the current filters." />
             )}
           </article>
         </section>
