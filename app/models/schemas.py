@@ -195,6 +195,44 @@ class IngestionResult(BaseModel):
     event_id: str
     error: str | None = None
     analysis: AnalyzeResponse | None = None
+    rag_sync_scheduled: bool = False
+
+
+class PlaybookAskRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=2000)
+    top_k: int = Field(default=5, ge=1, le=20)
+    retrieval_only: bool = False
+    category: str | None = None
+
+
+class SimilarCallsRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=2000)
+    top_k: int = Field(default=5, ge=1, le=20)
+
+
+class BestPracticesRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=2000)
+    industry: str | None = None
+
+
+class ComplianceScanRequest(BaseModel):
+    transcript: str = Field(min_length=10, max_length=20000)
+
+
+class SuggestScriptRequest(BaseModel):
+    transcript: str = Field(min_length=10, max_length=20000)
+    industry: str | None = None
+
+
+class PreCallBriefRequest(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=120)
+    industry: str | None = None
+    specialties: list[str] = Field(default_factory=list)
+
+
+class AgentDigestRequest(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=120)
+    industry: str | None = None
 
 
 class IngestionEvent(BaseModel):

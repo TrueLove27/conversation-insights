@@ -207,4 +207,5 @@ export interface IngestionResult {
   event_id: string;
   error: string | null;
   analysis: AnalyzeResponse | null;
+  rag_sync_scheduled?: boolean;
 }

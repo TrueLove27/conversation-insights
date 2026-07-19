@@ -23,6 +23,28 @@ import type {
 } from "../types";
 
 const API_BASE = "/api/v1";
+const ADMIN_API_KEY_STORAGE = "talksmith_api_key";
+
+export function getAdminApiKey(): string {
+  try {
+    return localStorage.getItem(ADMIN_API_KEY_STORAGE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setAdminApiKey(key: string): void {
+  try {
+    localStorage.setItem(ADMIN_API_KEY_STORAGE, key);
+  } catch {
+    // ignore storage failures (private mode)
+  }
+}
+
+function adminHeaders(): Record<string, string> {
+  const key = getAdminApiKey();
+  return key ? { "X-API-Key": key } : {};
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -31,6 +53,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Unauthorized (401). Save a valid API key in Settings, then try again.");
+    }
     const detail = await response.text();
     throw new Error(detail || `Request failed: ${response.status}`);
   }
@@ -130,15 +155,22 @@ export const api = {
     }),
 
   syncRag: () =>
-    request<{ success: boolean; message: string }>("/knowledge/sync-rag", { method: "POST" }),
+    request<{ success: boolean; message: string }>("/knowledge/sync-rag", {
+      method: "POST",
+      headers: adminHeaders(),
+    }),
 
   importCorpus: (industry?: string, limit = 50) => {
     const query = new URLSearchParams();
     if (industry) query.set("industry", industry);
     query.set("limit", String(limit));
-    return request<{ imported: number; available: number }>(`/knowledge/import-corpus?${query}`, {
-      method: "POST",
-    });
+    return request<{ imported: number; available: number; rag_sync_scheduled?: boolean }>(
+      `/knowledge/import-corpus?${query}`,
+      {
+        method: "POST",
+        headers: adminHeaders(),
+      },
+    );
   },
 
   listJobs: (status?: JobStatus) => {
@@ -157,7 +189,9 @@ export const api = {
   getIntegrationStatus: () => request<IntegrationStatus>("/integrations/status"),
 
   listIngestionEvents: (limit = 30) =>
-    request<IngestionEvent[]>(`/ingest/events?limit=${limit}`),
+    request<IngestionEvent[]>(`/ingest/events?limit=${limit}`, {
+      headers: adminHeaders(),
+    }),
 
   ingestCall: (payload: {
     transcript: string;

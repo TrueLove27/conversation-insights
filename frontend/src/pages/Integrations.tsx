@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { api, getAdminApiKey, setAdminApiKey } from "../api/client";
 import type { AgentRecord, IntegrationStatus } from "../types";
 import { Card, MetricCard, PageHeader, ServiceStatus } from "../components/ui";
 
@@ -11,6 +11,8 @@ export default function IntegrationsPage() {
   const [syncing, setSyncing] = useState(false);
   const [importMsg, setImportMsg] = useState("");
   const [syncMsg, setSyncMsg] = useState("");
+  const [apiKey, setApiKey] = useState(() => getAdminApiKey());
+  const [keySaved, setKeySaved] = useState(false);
 
   const load = () => {
     Promise.all([api.getIntegrationStatus(), api.listAgents()])
@@ -25,12 +27,19 @@ export default function IntegrationsPage() {
     load();
   }, []);
 
+  const saveKey = () => {
+    setAdminApiKey(apiKey.trim());
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 2000);
+  };
+
   const loadCalls = async () => {
     setImporting(true);
     setImportMsg("");
     try {
       const res = await api.importCorpus(undefined, 200);
-      setImportMsg(`Loaded ${res.imported} calls into Talksmith.`);
+      const syncNote = res.rag_sync_scheduled ? " Coaching index rebuild scheduled." : "";
+      setImportMsg(`Loaded ${res.imported} calls into Talksmith.${syncNote}`);
       load();
     } catch (err) {
       setImportMsg(err instanceof Error ? err.message : "Failed to load calls");
@@ -61,6 +70,27 @@ export default function IntegrationsPage() {
       <PageHeader title="Settings" subtitle="Manage your call library and check that everything is connected." />
 
       {error && <div className="form-error">{error}</div>}
+
+      <Card title="Admin API key" description="Required for loading sample calls and rebuilding the coaching index.">
+        <label htmlFor="admin-api-key">API key</label>
+        <input
+          id="admin-api-key"
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="dev-ingest-key-change-me"
+          autoComplete="off"
+        />
+        <div className="button-row">
+          <button type="button" onClick={saveKey}>
+            Save API key
+          </button>
+        </div>
+        {keySaved ? <p className="form-note">API key saved in this browser.</p> : null}
+        <p className="form-note">
+          Local default: <code>dev-ingest-key-change-me</code> (same as <code>INGEST_API_KEY</code>).
+        </p>
+      </Card>
 
       <Card title="Your call library" description="Pull in sample calls from different industries to explore.">
         {status ? (

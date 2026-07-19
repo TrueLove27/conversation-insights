@@ -137,6 +137,86 @@ def test_ingest_call_with_api_key(client):
     body = response.json()
     assert body["success"] is True
     assert body["call_id"] is not None
+    assert body["rag_sync_scheduled"] is True
+
+
+def test_admin_knowledge_requires_api_key(client):
+    assert client.post("/api/v1/knowledge/sync-rag").status_code == 401
+    assert client.post("/api/v1/knowledge/import-corpus?limit=10").status_code == 401
+    assert client.get("/api/v1/ingest/events").status_code == 401
+
+
+def test_sync_rag_with_api_key(client, monkeypatch):
+    from app.clients.rag_client import RagClient
+
+    async def _fake_sync(_self):
+        return {"success": True, "message": "synced"}
+
+    monkeypatch.setattr(RagClient, "sync_all", _fake_sync)
+    response = client.post(
+        "/api/v1/knowledge/sync-rag",
+        headers={"X-API-Key": "test-ingest-key"},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+
+def test_import_corpus_with_api_key(client, monkeypatch):
+    async def _fake_import(*_args, **_kwargs):
+        return {"imported": 3, "skipped": 0, "available": 10}
+
+    monkeypatch.setattr(
+        "app.api.routes.knowledge._corpus.import_calls",
+        _fake_import,
+    )
+    monkeypatch.setattr(
+        "app.api.routes.knowledge.schedule_rag_sync",
+        lambda reason: True,
+    )
+    response = client.post(
+        "/api/v1/knowledge/import-corpus?limit=10",
+        headers={"X-API-Key": "test-ingest-key"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["imported"] == 3
+    assert body["rag_sync_scheduled"] is True
+
+
+def test_ingest_events_with_api_key(client):
+    response = client.get(
+        "/api/v1/ingest/events",
+        headers={"X-API-Key": "test-ingest-key"},
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_knowledge_ask_validation(client):
+    response = client.post("/api/v1/knowledge/ask", json={"question": "hi"})
+    assert response.status_code == 422
+
+
+def test_integrations_analyze_shares_rag_path(client, monkeypatch):
+    from app.clients.rag_client import RagClient
+
+    monkeypatch.setattr(RagClient, "context_for_analysis", _raise_rag_down)
+    monkeypatch.setattr(RagClient, "scan_compliance", _raise_rag_down)
+    monkeypatch.setattr(RagClient, "suggest_script", _raise_rag_down)
+
+    response = client.post(
+        "/api/v1/integrations/analyze",
+        json={
+            "transcript": "Agent: Thanks for calling today. Customer: I want to book a demo for Tuesday afternoon.",
+            "agent_id": "agent-001",
+            "use_rag_context": True,
+            "industry": "healthcare",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rag_degraded"] is True
+    assert "sentiment" in body
 
 
 def test_integration_status(client):

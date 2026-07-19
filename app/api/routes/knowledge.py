@@ -1,81 +1,83 @@
-from fastapi import APIRouter, HTTPException, Query
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.clients.rag_client import get_rag_client
-from app.models.schemas import RagCitation
+from app.core.auth import verify_api_key
+from app.core.limiter import limiter
+from app.models.schemas import (
+    AgentDigestRequest,
+    BestPracticesRequest,
+    ComplianceScanRequest,
+    PlaybookAskRequest,
+    PreCallBriefRequest,
+    SimilarCallsRequest,
+    SuggestScriptRequest,
+)
 from app.services.corpus_sync_service import CorpusSyncService
+from app.services.rag_sync_service import schedule_rag_sync
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 _corpus = CorpusSyncService()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/ask", response_model=dict)
-async def ask_playbook(body: dict) -> dict:
-    question = body.get("question", "").strip()
-    if len(question) < 3:
-        raise HTTPException(status_code=400, detail="Question too short")
+@limiter.limit("30/minute")
+async def ask_playbook(request: Request, body: PlaybookAskRequest) -> dict:
     try:
         return await get_rag_client().query_playbook(
-            question,
-            top_k=body.get("top_k", 5),
-            retrieval_only=body.get("retrieval_only", False),
-            category=body.get("category"),
+            body.question.strip(),
+            top_k=body.top_k,
+            retrieval_only=body.retrieval_only,
+            category=body.category,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/similar-calls", response_model=dict)
-async def similar_calls(body: dict) -> dict:
-    question = body.get("question", "").strip()
-    if len(question) < 3:
-        raise HTTPException(status_code=400, detail="Query too short")
+@limiter.limit("30/minute")
+async def similar_calls(request: Request, body: SimilarCallsRequest) -> dict:
     try:
-        return await get_rag_client().search_transcripts(question, top_k=body.get("top_k", 5))
+        return await get_rag_client().search_transcripts(body.question.strip(), top_k=body.top_k)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/best-practices", response_model=dict)
-async def best_practices(body: dict) -> dict:
-    question = body.get("question", "").strip()
-    if len(question) < 3:
-        raise HTTPException(status_code=400, detail="Query too short")
+@limiter.limit("30/minute")
+async def best_practices(request: Request, body: BestPracticesRequest) -> dict:
     try:
-        return await get_rag_client().match_best_practices(question, body.get("industry"))
+        return await get_rag_client().match_best_practices(body.question.strip(), body.industry)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/scan-compliance", response_model=dict)
-async def scan_compliance(body: dict) -> dict:
-    transcript = body.get("transcript", "").strip()
-    if len(transcript) < 10:
-        raise HTTPException(status_code=400, detail="Transcript too short")
+@limiter.limit("20/minute")
+async def scan_compliance(request: Request, body: ComplianceScanRequest) -> dict:
     try:
-        return await get_rag_client().scan_compliance(transcript)
+        return await get_rag_client().scan_compliance(body.transcript.strip())
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/suggest-script", response_model=dict)
-async def suggest_script(body: dict) -> dict:
-    transcript = body.get("transcript", "").strip()
-    if len(transcript) < 10:
-        raise HTTPException(status_code=400, detail="Transcript too short")
+@limiter.limit("20/minute")
+async def suggest_script(request: Request, body: SuggestScriptRequest) -> dict:
     try:
-        return await get_rag_client().suggest_script(transcript, body.get("industry"))
+        return await get_rag_client().suggest_script(body.transcript.strip(), body.industry)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/pre-call-brief", response_model=dict)
-async def pre_call_brief(body: dict) -> dict:
-    agent_id = body.get("agent_id", "").strip()
-    if not agent_id:
-        raise HTTPException(status_code=400, detail="agent_id required")
+@limiter.limit("30/minute")
+async def pre_call_brief(request: Request, body: PreCallBriefRequest) -> dict:
     try:
         return await get_rag_client().pre_call_brief(
-            agent_id, body.get("industry"), body.get("specialties", [])
+            body.agent_id.strip(), body.industry, body.specialties
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
@@ -90,18 +92,17 @@ async def topic_insights(industry: str | None = Query(default=None)) -> dict:
 
 
 @router.post("/agent-digest", response_model=dict)
-async def agent_digest(body: dict) -> dict:
-    agent_id = body.get("agent_id", "").strip()
-    if not agent_id:
-        raise HTTPException(status_code=400, detail="agent_id required")
+@limiter.limit("30/minute")
+async def agent_digest(request: Request, body: AgentDigestRequest) -> dict:
     try:
-        return await get_rag_client().agent_digest(agent_id, body.get("industry"))
+        return await get_rag_client().agent_digest(body.agent_id.strip(), body.industry)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"RAG service unavailable: {exc}") from exc
 
 
 @router.post("/sync-rag", response_model=dict)
-async def sync_rag() -> dict:
+@limiter.limit("10/minute")
+async def sync_rag(request: Request, _: None = Depends(verify_api_key)) -> dict:
     try:
         return await get_rag_client().sync_all()
     except Exception as exc:
@@ -109,33 +110,17 @@ async def sync_rag() -> dict:
 
 
 @router.post("/import-corpus")
+@limiter.limit("10/minute")
 async def import_corpus(
+    request: Request,
     industry: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
+    _: None = Depends(verify_api_key),
 ) -> dict:
     try:
-        return await _corpus.import_calls(industry=industry, limit=limit)
+        result = await _corpus.import_calls(industry=industry, limit=limit)
+        scheduled = schedule_rag_sync(f"import-corpus:{result.get('imported', 0)}")
+        result["rag_sync_scheduled"] = scheduled
+        return result
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Corpus service unavailable: {exc}") from exc
-
-
-def citations_from_rag(raw: dict) -> tuple[list[RagCitation], list[RagCitation]]:
-    similar = [
-        RagCitation(
-            document_id=s.get("document_id", ""),
-            document_name=s.get("document_name", ""),
-            text=s.get("text", "")[:300],
-            score=float(s.get("score", 0)),
-        )
-        for s in raw.get("similar_calls", [])
-    ]
-    playbooks = [
-        RagCitation(
-            document_id=s.get("document_id", ""),
-            document_name=s.get("document_name", ""),
-            text=s.get("text", "")[:300],
-            score=float(s.get("score", 0)),
-        )
-        for s in raw.get("playbook_excerpts", [])
-    ]
-    return similar, playbooks

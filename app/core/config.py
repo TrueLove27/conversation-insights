@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     rag_service_url: str = "http://localhost:8002"
     corpus_service_url: str = "http://localhost:8004"
     enable_rag_context: bool = True
+    rag_sync_on_ingest: bool = Field(default=True, validation_alias="RAG_SYNC_ON_INGEST")
 
 
 @lru_cache
