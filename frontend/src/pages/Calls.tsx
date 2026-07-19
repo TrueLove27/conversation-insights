@@ -5,6 +5,7 @@ import type { AgentRecord, CallOutcome, CallRecord, SentimentLabel } from "../ty
 import { EmptyState, LoadingSkeleton, Button, Chip } from "../components/ui";
 import { AddCallForm } from "../components/AddCallForm";
 import { highlightText, TranscriptView } from "../components/TranscriptView";
+import { downloadCallSummary, printCallSummary } from "../utils/callExport";
 
 const PAGE_SIZE = 50;
 
@@ -331,6 +332,20 @@ export default function CallsPage() {
                   >
                     Get coaching tips
                   </Link>
+                  <Button
+                    type="button"
+                    variant="glass"
+                    onClick={() => downloadCallSummary(selectedCall, agentName)}
+                  >
+                    Download summary
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="glass"
+                    onClick={() => printCallSummary(selectedCall, agentName)}
+                  >
+                    Print
+                  </Button>
                 </div>
                 <div className="detail-grid">
                   <div>
