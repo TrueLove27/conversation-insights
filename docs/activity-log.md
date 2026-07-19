@@ -18,3 +18,4 @@ Portfolio maintenance notes.
 - **2026-07-19** - Impact Plan C: Add your own call form on All Calls — paste transcript, ingest+analyze, jump to new call
 - **2026-07-19** - Impact Plan D: Review a Call shows mood breakdown bars, risk flags, and keyword chips
 - **2026-07-19** - Impact Plan E: Copy buttons on coaching advice / scripts with Copied! toast
+- **2026-07-19** - Impact Plan F: Jobs detail shows human-readable reports instead of raw JSON payloads

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { JobRecord, JobStatus, JobType } from "../types";
 import { EmptyState, LoadingSkeleton, Button } from "../components/ui";
+import { JobPayloadSummary, JobResultPanel } from "../components/JobResultPanel";
 import { useAsyncLoad } from "../hooks/useAsyncLoad";
 
 const JOB_TYPES: JobType[] = ["batch_analysis", "transcript_analysis", "agent_report", "keyword_extraction"];
@@ -191,12 +192,10 @@ export default function JobsPage() {
                   </strong>
                 </div>
               </div>
-              <h4>Payload</h4>
-              <pre className="json-block">{JSON.stringify(selectedJob.payload, null, 2)}</pre>
+              <h4>What this job ran</h4>
+              <JobPayloadSummary job={selectedJob} />
               <h4>Result</h4>
-              <pre className="json-block">
-                {selectedJob.result ? JSON.stringify(selectedJob.result, null, 2) : "No result yet"}
-              </pre>
+              <JobResultPanel job={selectedJob} />
               {selectedJob.error ? <p className="form-error">{selectedJob.error}</p> : null}
             </>
           ) : (

@@ -1021,6 +1021,21 @@ button.chip::before {
   font-size: 0.85rem;
 }
 
+.job-report-lead {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.job-call-links {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.job-result-panel h4 {
+  margin-bottom: 0.5rem;
+}
+
 .toast {
   position: fixed;
   bottom: 1.5rem;
