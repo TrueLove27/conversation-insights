@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
@@ -33,7 +33,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
         version=settings.app_version,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         data_files={
             "calls": CallRepository().file_exists(),
             "agents": AgentRepository().file_exists(),

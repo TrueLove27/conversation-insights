@@ -10,7 +10,6 @@ import httpx
 from app.core.config import get_settings
 from app.models.schemas import AnalyzeResponse, SentimentLabel
 
-
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 

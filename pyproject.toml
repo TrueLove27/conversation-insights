@@ -1,0 +1,22 @@
+[project]
+name = "conversation-insights"
+version = "2.0.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+  "B008",  # FastAPI Depends/Query defaults
+  "E501",  # existing long strings across routes/tests
+  "E402",  # tests/conftest sets env before app imports
+]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+check_untyped_defs = true

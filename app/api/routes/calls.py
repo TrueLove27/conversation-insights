@@ -1,6 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.models.schemas import CallFilterParams, CallOutcome, CallRecord, PaginatedCalls, SentimentLabel
+from app.models.schemas import (
+    CallFilterParams,
+    CallOutcome,
+    CallRecord,
+    PaginatedCalls,
+    SentimentLabel,
+)
 from app.services.call_service import CallService
 
 router = APIRouter(prefix="/calls", tags=["calls"])

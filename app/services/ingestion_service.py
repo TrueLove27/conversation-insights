@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.db.store import get_database
@@ -11,7 +11,6 @@ from app.models.schemas import (
     CallRecord,
     IngestionEvent,
     IngestionResult,
-    SentimentLabel,
 )
 from app.repositories.call_repository import CallRepository
 from app.services.analysis_service import AnalysisService
@@ -45,7 +44,7 @@ class IngestionService:
                 agent_id=request.agent_id,
                 customer_name=request.customer_name,
                 phone_number=request.phone_number or "",
-                started_at=request.started_at or datetime.now(timezone.utc),
+                started_at=request.started_at or datetime.now(UTC),
                 duration_seconds=request.duration_seconds or max(60, len(request.transcript.split()) * 2),
                 outcome=outcome,
                 sentiment=analysis.sentiment,

@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from uuid import uuid4
 
 from app.core.config import Settings, get_settings
@@ -27,7 +28,7 @@ from app.models.schemas import (
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Database:

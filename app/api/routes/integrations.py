@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Request
 
+from app.clients.rag_client import get_rag_client
 from app.core.config import get_settings
 from app.core.limiter import limiter
 from app.db.store import get_database
 from app.models.schemas import AnalyzeRequest, AnalyzeResponse, IntegrationStatusResponse
 from app.services.corpus_sync_service import CorpusSyncService
 from app.services.llm_client import groq_status
-from app.clients.rag_client import get_rag_client
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 _corpus = CorpusSyncService()

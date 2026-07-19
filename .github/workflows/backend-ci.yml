@@ -7,6 +7,7 @@ on:
       - "app/**"
       - "data/**"
       - "requirements*.txt"
+      - "pyproject.toml"
       - "tests/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
@@ -15,6 +16,7 @@ on:
       - "app/**"
       - "data/**"
       - "requirements*.txt"
+      - "pyproject.toml"
       - "tests/**"
       - ".github/workflows/backend-ci.yml"
   workflow_dispatch:
@@ -43,6 +45,12 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check app tests
+
+      - name: Mypy type check
+        run: mypy app/services app/models
 
       - name: Verify imports
         run: python -c "from app.main import app; print(app.title, app.version)"

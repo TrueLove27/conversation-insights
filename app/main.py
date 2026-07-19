@@ -12,7 +12,7 @@ from app.api.router import api_router
 from app.clients.rag_client import get_rag_client
 from app.core.config import get_settings
 from app.core.limiter import limiter
-from app.core.logging import setup_logging, set_request_id
+from app.core.logging import set_request_id, setup_logging
 from app.db.store import get_database
 
 logger = logging.getLogger(__name__)

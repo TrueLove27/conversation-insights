@@ -1,6 +1,16 @@
 from fastapi import APIRouter
 
-from app.api.routes import agents, analytics, analyze, calls, health, ingest, integrations, jobs, knowledge
+from app.api.routes import (
+    agents,
+    analytics,
+    analyze,
+    calls,
+    health,
+    ingest,
+    integrations,
+    jobs,
+    knowledge,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)

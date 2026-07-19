@@ -1,30 +1,90 @@
+"""Rule-based transcript heuristics for sentiment, booking intent, and keywords."""
+
+from __future__ import annotations
+
 import re
 from collections import Counter
 
-from app.models.schemas import AnalyzeRequest, AnalyzeResponse, KeywordHit, SentimentBreakdown, SentimentLabel
-
+from app.models.schemas import (
+    AnalyzeRequest,
+    AnalyzeResponse,
+    KeywordHit,
+    SentimentBreakdown,
+    SentimentLabel,
+)
 
 POSITIVE_TERMS = {
-    "great", "excellent", "thank", "thanks", "perfect", "happy", "wonderful",
-    "appreciate", "helpful", "awesome", "glad", "pleased", "confirm", "confirmed",
-    "sounds good", "works for me", "looking forward",
+    "great",
+    "excellent",
+    "thank",
+    "thanks",
+    "perfect",
+    "happy",
+    "wonderful",
+    "appreciate",
+    "helpful",
+    "awesome",
+    "glad",
+    "pleased",
+    "confirmed",
+    "sounds good",
+    "works for me",
+    "looking forward",
 }
 
 NEGATIVE_TERMS = {
-    "frustrated", "angry", "upset", "disappointed", "cancel", "cancelled", "problem",
-    "issue", "complaint", "unacceptable", "rude", "wait", "waiting", "never",
-    "worst", "terrible", "not happy", "unhappy",
+    "frustrated",
+    "angry",
+    "upset",
+    "disappointed",
+    "cancel",
+    "cancelled",
+    "problem",
+    "issue",
+    "complaint",
+    "unacceptable",
+    "rude",
+    "wait",
+    "waiting",
+    "never",
+    "worst",
+    "terrible",
+    "not happy",
+    "unhappy",
 }
 
 BOOKING_TERMS = {
-    "schedule", "book", "booking", "appointment", "reserve", "reservation",
-    "confirm", "confirmed", "tomorrow", "next week", "available", "slot",
-    "calendar", "see you", "looking forward",
+    "schedule",
+    "book",
+    "booking",
+    "appointment",
+    "reserve",
+    "reservation",
+    "confirm",
+    "confirmed",
+    "tomorrow",
+    "next week",
+    "available",
+    "slot",
+    "calendar",
+    "see you",
+    "looking forward",
 }
 
+STRONG_BOOKING_TERMS = {"book", "schedule", "appointment", "reserve"}
+
 RISK_TERMS = {
-    "lawyer", "legal", "sue", "complaint", "refund", "chargeback", "supervisor",
-    "manager", "escalate", "regulator", "report you",
+    "lawyer",
+    "legal",
+    "sue",
+    "complaint",
+    "refund",
+    "chargeback",
+    "supervisor",
+    "manager",
+    "escalate",
+    "regulator",
+    "report you",
 }
 
 TOPIC_PATTERNS: dict[str, list[str]] = {
@@ -37,7 +97,7 @@ TOPIC_PATTERNS: dict[str, list[str]] = {
 
 
 class AnalysisService:
-    """Rule-based mock NLP engine for transcript analysis."""
+    """Rule-based transcript heuristics for offline / LLM-fallback analysis."""
 
     def analyze_transcript(self, request: AnalyzeRequest) -> AnalyzeResponse:
         text = request.transcript.strip()
@@ -58,7 +118,10 @@ class AnalysisService:
         sentiment = self._label_sentiment(sentiment_score, positive_hits, negative_hits)
 
         booking_confidence = min(1.0, round(booking_hits / 4, 4))
-        booking_intent = booking_hits >= 2 or any(term in lowered for term in ("book", "schedule", "confirm"))
+        strong_booking = any(
+            self._count_phrase_hits(lowered, {term}) > 0 for term in STRONG_BOOKING_TERMS
+        )
+        booking_intent = booking_hits >= 2 or strong_booking
 
         keywords = self._extract_keywords(lowered)
         topics = self._detect_topics(lowered)
@@ -81,7 +144,20 @@ class AnalysisService:
         )
 
     def _count_phrase_hits(self, text: str, phrases: set[str]) -> int:
-        return sum(1 for phrase in phrases if phrase in text)
+        total = 0
+        for phrase in phrases:
+            if " " in phrase:
+                start = 0
+                while True:
+                    idx = text.find(phrase, start)
+                    if idx < 0:
+                        break
+                    total += 1
+                    start = idx + len(phrase)
+            else:
+                pattern = rf"\b{re.escape(phrase)}\b"
+                total += len(re.findall(pattern, text))
+        return total
 
     def _label_sentiment(self, score: float, positive: int, negative: int) -> SentimentLabel:
         if positive > 0 and negative > 0:
@@ -95,8 +171,21 @@ class AnalysisService:
     def _extract_keywords(self, text: str) -> list[KeywordHit]:
         tokens = re.findall(r"[a-zA-Z']{4,}", text)
         stopwords = {
-            "that", "this", "with", "have", "from", "they", "would", "there",
-            "about", "could", "should", "their", "which", "because", "really",
+            "that",
+            "this",
+            "with",
+            "have",
+            "from",
+            "they",
+            "would",
+            "there",
+            "about",
+            "could",
+            "should",
+            "their",
+            "which",
+            "because",
+            "really",
         }
         filtered = [token for token in tokens if token not in stopwords]
         counter = Counter(filtered)
@@ -108,8 +197,11 @@ class AnalysisService:
 
     def _categorize_term(self, term: str) -> str:
         for category, patterns in TOPIC_PATTERNS.items():
-            if term in patterns:
-                return category
+            for pattern in patterns:
+                if term == pattern:
+                    return category
+                if len(pattern) >= 4 and term.startswith(pattern):
+                    return category
         if term in {"thank", "thanks", "great", "happy", "sorry"}:
             return "sentiment"
         return "general"
@@ -117,18 +209,20 @@ class AnalysisService:
     def _detect_topics(self, text: str) -> list[str]:
         topics = []
         for topic, patterns in TOPIC_PATTERNS.items():
-            if any(pattern in text for pattern in patterns):
+            if any(self._count_phrase_hits(text, {pattern}) > 0 for pattern in patterns):
                 topics.append(topic)
         return topics or ["general inquiry"]
 
     def _detect_risk_flags(self, text: str) -> list[str]:
         flags = []
         for term in RISK_TERMS:
-            if term in text:
+            if self._count_phrase_hits(text, {term}) > 0:
                 flags.append(f"Detected escalation language: '{term}'")
         if text.count("!") >= 3:
             flags.append("High punctuation intensity may indicate frustration")
-        if "hold" in text and ("forever" in text or "long time" in text):
+        if self._count_phrase_hits(text, {"hold"}) > 0 and (
+            "forever" in text or "long time" in text
+        ):
             flags.append("Customer expressed dissatisfaction with wait time")
         return flags
 

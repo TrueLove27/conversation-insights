@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.config import get_settings
@@ -29,7 +29,7 @@ PROGRESS_YIELD_SECONDS = 0.05
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class JobService:
